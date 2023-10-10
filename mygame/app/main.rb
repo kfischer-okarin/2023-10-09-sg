@@ -21,6 +21,7 @@ end
 
 def prepare_sprites(args)
   args.state.sprites.triangle = prepare_triangle_sprite(args)
+  args.state.sprites.circle = prepare_circle_sprite(args, :circle)
 end
 
 def prepare_triangle_sprite(args)
@@ -33,6 +34,25 @@ def prepare_triangle_sprite(args)
     { x: 2, y: 2, w: 1, h: 1, path: :pixel }
   ]
   { w: 5, h: 5, path: :triangle }
+end
+
+def prepare_circle_sprite(args, name, radius: 5)
+  diameter = radius * 2 + 1
+  radius_squared = radius**2
+  render_target = args.outputs[name]
+  render_target.width = diameter
+  render_target.height = diameter
+  render_target.sprites << (0..radius).map do |y|
+    segment_w = (2 * Math.sqrt(radius_squared - ((y + 0.5) - radius)**2)).round
+    segment_w += 1 if segment_w.even?
+    puts segment_w
+    segment_x = (radius - segment_w.idiv(2)).floor
+    [
+      { x: segment_x, y: y, w: segment_w, h: 1, path: :pixel },
+      { x: segment_x, y: diameter - y - 1, w: segment_w, h: 1, path: :pixel }
+    ]
+  end
+  { w: diameter, h: diameter, path: name }
 end
 
 def process_input(args)
