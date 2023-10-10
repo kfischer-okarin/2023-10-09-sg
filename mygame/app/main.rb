@@ -29,14 +29,14 @@ end
 
 def prepare_triangle_sprite(args)
   render_target = args.outputs[:triangle]
-  render_target.width = 5
+  render_target.width = 3
   render_target.height = 5
   render_target.sprites << [
     { x: 0, y: 0, w: 1, h: 5, path: :pixel },
     { x: 1, y: 1, w: 1, h: 3, path: :pixel },
     { x: 2, y: 2, w: 1, h: 1, path: :pixel }
   ]
-  { w: 5, h: 5, path: :triangle }
+  { w: 3, h: 5, path: :triangle }
 end
 
 def prepare_circle_sprite(args, name, radius: 5)
@@ -104,6 +104,7 @@ def update(args)
   when :charging
     player_state[:ticks] += 1
     player_state[:power] = [player_state[:ticks], 120].min
+    player_state[:ready] = player_state[:power] >= 40
 
     args.state.charge_particles << player_charge_particle(player, args.state.sprites.circle)
 
@@ -114,8 +115,18 @@ def update(args)
     end
     args.state.charge_particles.reject! { |particle| Animations.finished?(particle[:animation]) }
 
+    if player_state[:ready]
+      simulation_player = player.dup
+      simulation_player[:state] = { type: :rushing, power: player_state[:power] }
+      execute_rush(simulation_player) until simulation_player[:state][:power].zero?
+      player_state[:predicted_distance] = Math.sqrt(
+        (player[:x] - simulation_player[:x])**2 +
+        (player[:y] - simulation_player[:y])**2
+      )
+    end
+
     unless player_inputs[:charge]
-      if player_state[:power] > 40
+      if player_state[:ready]
         player[:state] = { type: :rushing, power: player_state[:power] }
       else
         player[:state] = { type: :normal }
@@ -145,15 +156,24 @@ def render(args)
     path: :pixel, **Colors::BACKGROUND
   }
   player = args.state.player
-  screen_render_target.sprites << [
-    player_sprite(player),
-    facing_triangle(player, args.state.sprites.triangle)
-  ]
+  screen_render_target.sprites << player_sprite(player)
+  player_facing_triangle = facing_triangle(player, args.state.sprites.triangle)
 
-  case player[:state][:type]
+  player_state = player[:state]
+  case player_state[:type]
   when :charging
     screen_render_target.sprites << args.state.charge_particles
+    player_facing_triangle[:a] = 128
+    if player_state[:ready]
+      player_facing_triangle = facing_triangle(
+        player,
+        args.state.sprites.triangle.merge(w: player_state[:predicted_distance], a: 128),
+        distance: 10 + player_state[:predicted_distance].idiv(2)
+      )
+    end
   end
+
+  screen_render_target.sprites << player_facing_triangle
 
   args.outputs.sprites << Screen.sprite(screen)
   args.outputs.labels << { x: 0, y: 720, text: args.gtk.current_framerate.to_i.to_s, **Colors::TEXT }
