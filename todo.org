@@ -1,0 +1,28 @@
+#+CATEGORY: shape-brawl
+#+FILETAGS: DragonRuby
+
+* TODOs
+:PROPERTIES:
+:LOGGING:  nil
+:END:
+
+
+** TODO Rush into enemy hurts/kills them
+
+
+** TODO Win State - Kill all enemies
+
+
+** TODO Crescent Moon
+- [ ] Movement
+- [ ] Explosive Projectives
+
+
+** TODO Game Over State
+- Health zero
+
+
+** TODO Stage boundaries
+- [ ] Screen shake when hitting wall
+- [ ] Dazed ? when hitting wall?
+

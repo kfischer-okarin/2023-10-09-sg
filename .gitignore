@@ -21,3 +21,6 @@ VERSION.txt
 .DS_Store
 vendor
 Gemfile.lock
+
+# Emacs
+*~
