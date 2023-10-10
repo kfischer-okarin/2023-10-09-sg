@@ -1,3 +1,4 @@
+require 'lib/animations.rb'
 require 'lib/screen.rb'
 
 def tick(args)
@@ -14,8 +15,10 @@ def setup(args)
   args.state.screen = Screen::GBA_STYLE
   args.state.player = {
     x: 160, y: 90, w: 9, h: 9,
-    face_angle: 0, v_x: 0, v_y: 0
+    face_angle: 0, v_x: 0, v_y: 0,
+    state: { type: :normal }
   }
+  args.state.charge_particles = []
   prepare_sprites(args)
 end
 
@@ -56,37 +59,62 @@ def prepare_circle_sprite(args, name, radius: 5)
 end
 
 def process_input(args)
+  keyboard_key_down = args.inputs.keyboard.key_down
+  keyboard_key_held = args.inputs.keyboard.key_held
   left_right = args.inputs.left_right
   up_down = args.inputs.up_down
   {
     left: left_right.negative?,
     right: left_right.positive?,
     up: up_down.positive?,
-    down: up_down.negative?
+    down: up_down.negative?,
+    charge: keyboard_key_down.space || keyboard_key_held.space,
   }
 end
 
 def update(args)
   player_inputs = args.state.player_inputs
   player = args.state.player
-  player[:v_x] = 0
-  player[:v_y] = 0
-  if player_inputs[:left]
-    player[:v_x] = - 1
-  elsif player_inputs[:right]
-    player[:v_x] = 1
-  end
+  case player[:state][:type]
+  when :normal
+    player[:v_x] = 0
+    player[:v_y] = 0
+    if player_inputs[:left]
+      player[:v_x] = - 1
+    elsif player_inputs[:right]
+      player[:v_x] = 1
+    end
 
-  if player_inputs[:up]
-    player[:v_y] = 1
-  elsif player_inputs[:down]
-    player[:v_y] = -1
-  end
-  return if player[:v_x].zero? && player[:v_y].zero?
+    if player_inputs[:up]
+      player[:v_y] = 1
+    elsif player_inputs[:down]
+      player[:v_y] = -1
+    end
+    unless player[:v_x].zero? && player[:v_y].zero?
+      player[:x] += player[:v_x]
+      player[:y] += player[:v_y]
+      player[:face_angle] = Math.atan2(player[:v_y], player[:v_x])
+    end
 
-  player[:x] += player[:v_x]
-  player[:y] += player[:v_y]
-  player[:face_angle] = Math.atan2(player[:v_y], player[:v_x])
+    if player_inputs[:charge]
+      player[:state] = { type: :charging, ticks: 0, power: 0 }
+      args.state.charge_particles = []
+    end
+  when :charging
+    player[:state][:ticks] += 1
+    player[:state][:power] = [player[:state][:ticks], 60].min
+
+    args.state.charge_particles << player_charge_particle(player, args.state.sprites.circle)
+
+    args.state.charge_particles.each do |particle|
+      Animations.perform_tick(particle[:animation])
+      particle[:x] = player[:x] + Math.cos(particle[:angle_from_player]) * particle[:distance]
+      particle[:y] = player[:y] + Math.sin(particle[:angle_from_player]) * particle[:distance]
+    end
+    args.state.charge_particles.reject! { |particle| Animations.finished?(particle[:animation]) }
+
+    player[:state] = { type: :normal } unless player_inputs[:charge]
+  end
 end
 
 def render(args)
@@ -97,7 +125,13 @@ def render(args)
     facing_triangle(player, args.state.sprites.triangle)
   ]
 
+  case player[:state][:type]
+  when :charging
+    screen_render_target.sprites << args.state.charge_particles
+  end
+
   args.outputs.sprites << Screen.sprite(args.state.screen)
+  args.outputs.labels << { x: 0, y: 720, text: args.gtk.current_framerate.to_i.to_s }
 end
 
 def player_sprite(player)
@@ -119,6 +153,21 @@ def facing_triangle(entity, triangle_sprite, distance: 10)
     angle: entity[:face_angle].to_degrees,
     angle_anchor_x: 0.5, angle_anchor_y: 0.5
   )
+end
+
+def player_charge_particle(player, circle_sprite)
+  sprite = circle_sprite.to_sprite(
+    angle_from_player: rand * 2 * Math::PI,
+    distance: 30,
+    w: 11, h: 11,
+    r: 255, g: 128, b: 0, a: 128
+  )
+  sprite[:animation] = Animations.lerp(
+    sprite,
+    to: { distance: 0, a: 255, w: 1, h: 1 },
+    duration: 20
+  )
+  sprite
 end
 
 $gtk.reset
