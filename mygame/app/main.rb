@@ -48,7 +48,6 @@ def prepare_circle_sprite(args, name, radius: 5)
   render_target.sprites << (0..radius).map do |y|
     segment_w = (2 * Math.sqrt(radius_squared - ((y + 0.5) - radius)**2)).round
     segment_w += 1 if segment_w.even?
-    puts segment_w
     segment_x = (radius - segment_w.idiv(2)).floor
     [
       { x: segment_x, y: y, w: segment_w, h: 1, path: :pixel },
