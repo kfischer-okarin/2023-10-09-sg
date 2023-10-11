@@ -39,4 +39,5 @@ module Colors
   DIRECTION_TRIANGLE = DawnBringer32::WHITE
   PLAYER = DawnBringer32::LAVENDER_BLUE
   CRESCENT_MOON = DawnBringer32::ALMOST_BLACK
+  BLOOD = DawnBringer32::RED
 end
