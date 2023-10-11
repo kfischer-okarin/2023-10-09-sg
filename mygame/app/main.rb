@@ -24,6 +24,10 @@ def setup(args)
     face_angle: 0, v_x: 0, v_y: 0,
     state: { type: :normal }
   }
+  args.state.moving_entities = [
+    args.state.player,
+    args.state.crescent_moon
+  ]
   args.state.charge_particles = []
   prepare_sprites(args)
 end
@@ -85,6 +89,7 @@ def update(args)
   when :normal
     player[:v_x] = 0
     player[:v_y] = 0
+
     if player_inputs[:left]
       player[:v_x] = - 1
     elsif player_inputs[:right]
@@ -96,14 +101,13 @@ def update(args)
     elsif player_inputs[:down]
       player[:v_y] = -1
     end
-    unless player[:v_x].zero? && player[:v_y].zero?
-      player[:x] += player[:v_x]
-      player[:y] += player[:v_y]
-      player[:face_angle] = Math.atan2(player[:v_y], player[:v_x])
-    end
+
+    player[:face_angle] = Math.atan2(player[:v_y], player[:v_x]) unless player[:v_x].zero? && player[:v_y].zero?
 
     if player_inputs[:charge]
       player[:state] = { type: :charging, ticks: 0, power: 0 }
+      player[:v_x] = 0
+      player[:v_y] = 0
       args.state.charge_particles = []
     end
   when :charging
@@ -123,11 +127,14 @@ def update(args)
     if player_state[:ready]
       simulation_player = player.dup
       simulation_player[:state] = { type: :rushing, power: player_state[:power] }
-      execute_rush(simulation_player) until simulation_player[:state][:power].zero?
-      player_state[:predicted_distance] = Math.sqrt(
-        (player[:x] - simulation_player[:x])**2 +
-        (player[:y] - simulation_player[:y])**2
-      )
+      distance_x = 0
+      distance_y = 0
+      until simulation_player[:state][:power].zero?
+        execute_rush(simulation_player)
+        distance_x += simulation_player[:v_x]
+        distance_y += simulation_player[:v_y]
+      end
+      player_state[:predicted_distance] = Math.sqrt(distance_x**2 + distance_y**2)
     end
 
     unless player_inputs[:charge]
@@ -141,6 +148,11 @@ def update(args)
     execute_rush(player)
     player[:state] = { type: :normal } if player_state[:power].zero?
   end
+
+  args.state.moving_entities.each do |entity|
+    entity[:x] += entity[:v_x]
+    entity[:y] += entity[:v_y]
+  end
 end
 
 def execute_rush(player)
@@ -149,8 +161,8 @@ def execute_rush(player)
   return if rushing_state[:power].zero?
 
   rush_speed = rushing_state[:power].idiv(2)
-  player[:x] += Math.cos(player[:face_angle]) * rush_speed
-  player[:y] += Math.sin(player[:face_angle]) * rush_speed
+  player[:v_x] = Math.cos(player[:face_angle]) * rush_speed
+  player[:v_y] = Math.sin(player[:face_angle]) * rush_speed
 end
 
 def render(args)
