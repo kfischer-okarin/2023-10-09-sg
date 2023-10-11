@@ -18,6 +18,11 @@ def setup(args)
     face_angle: 0, v_x: 0, v_y: 0,
     state: { type: :normal }
   }
+  args.state.crescent_moon = {
+    x: 200, y: 100, w: 11, h: 11,
+    face_angle: 0, v_x: 0, v_y: 0,
+    state: { type: :normal }
+  }
   args.state.charge_particles = []
   prepare_sprites(args)
 end
@@ -154,6 +159,9 @@ def render(args)
     x: 0, y: 0, w: screen[:x_resolution], h: screen[:y_resolution],
     path: :pixel, **Colors::BACKGROUND
   }
+
+  screen_render_target.sprites << crescent_moon_sprite(args.state.crescent_moon)
+
   player = args.state.player
   screen_render_target.sprites << player_sprite(player)
   player_facing_triangle = facing_triangle(player, args.state.sprites.triangle)
@@ -186,6 +194,17 @@ def player_sprite(player)
     h: player[:h],
     path: :pixel,
     **Colors::PLAYER
+  }
+end
+
+def crescent_moon_sprite(crescent_moon)
+  {
+    x: crescent_moon[:x] - crescent_moon[:w].idiv(2),
+    y: crescent_moon[:y] - crescent_moon[:h].idiv(2),
+    w: crescent_moon[:w],
+    h: crescent_moon[:h],
+    path: 'sprites/crescent.png',
+    **Colors::CRESCENT_MOON
   }
 end
 
@@ -254,6 +273,7 @@ module Colors
   TEXT = DawnBringer32::WHITE
   DIRECTION_TRIANGLE = DawnBringer32::WHITE
   PLAYER = DawnBringer32::LAVENDER_BLUE
+  CRESCENT_MOON = DawnBringer32::ALMOST_BLACK
 end
 
 $gtk.reset
