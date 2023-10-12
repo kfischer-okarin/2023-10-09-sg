@@ -16,3 +16,6 @@
    Be aware that this might also delete all other ignored files in your repository (like maybe save games) - so if you want
    to keep anything make sure that you backup those files first
 2. Copy the new version of the DragonRuby engine into your game repository (don't forget the hidden `.dragonruby` folder)
+
+## Credits
+- `notalot.ttf` by Chequered Ink (https://www.dafont.com/notalot60.font)

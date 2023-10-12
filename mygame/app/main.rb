@@ -14,6 +14,7 @@ end
 
 def setup(args)
   args.state.screen = Screen::GBA_STYLE
+  args.state.game_state = :playing
   args.state.player = {
     x: 160, y: 90, w: 9, h: 9,
     face_angle: 0, v_x: 0, v_y: 0,
@@ -90,6 +91,8 @@ def update(args)
   player_state = player[:state]
   case player_state[:type]
   when :normal
+    return if args.state.game_state == :won
+
     player[:v_x] = 0
     player[:v_y] = 0
 
@@ -153,28 +156,14 @@ def update(args)
   end
 
   if player[:state][:type] == :rushing
-    args.state.enemies.each do |enemy|
-      has_collided = sphere_capsule_collision?(
-        enemy[:x], enemy[:y], 5,
-        player[:x], player[:y], player[:x] + player[:v_x], player[:y] + player[:v_y], 5
-      )
-      next unless has_collided
+    handle_rush_hits_enemy(player, args.state.enemies)
 
-      enemy[:state] = { type: :dead, ticks: 0 }
-    end
+    args.state.game_state = :won if args.state.enemies.all? { |enemy| enemy[:state][:type] == :dead }
   end
 
   args.state.moving_entities.each do |entity|
     entity[:x] += entity[:v_x]
     entity[:y] += entity[:v_y]
-  end
-
-  args.state.enemies.each do |enemy|
-    enemy_state = enemy[:state]
-    if enemy_state[:type] == :dead
-      enemy_state[:ticks] += 1
-      enemy[:state] = { type: :normal } if enemy_state[:ticks] >= 60
-    end
   end
 end
 
@@ -186,6 +175,18 @@ def execute_rush(player)
   rush_speed = rushing_state[:power].idiv(2)
   player[:v_x] = Math.cos(player[:face_angle]) * rush_speed
   player[:v_y] = Math.sin(player[:face_angle]) * rush_speed
+end
+
+def handle_rush_hits_enemy(player, enemies)
+  enemies.each do |enemy|
+    has_collided = sphere_capsule_collision?(
+      enemy[:x], enemy[:y], 5,
+      player[:x], player[:y], player[:x] + player[:v_x], player[:y] + player[:v_y], 5
+    )
+    next unless has_collided
+
+    enemy[:state] = { type: :dead, ticks: 0 }
+  end
 end
 
 def sphere_capsule_collision?(sphere_x, sphere_y, sphere_r, capsule_x1, capsule_y1, capsule_x2, capsule_y2, capsule_r)
@@ -243,6 +244,13 @@ def render(args)
   end
 
   screen_render_target.sprites << player_facing_triangle
+
+  if args.state.game_state == :won && player_state[:type] == :normal
+    screen_render_target.labels << {
+      x: 160, y: 90, text: 'You Win!', size_px: 39, font: 'fonts/notalot.ttf',
+      alignment_enum: 1, vertical_alignment_enum: 1, **Colors::TEXT
+    }
+  end
 
   args.outputs.sprites << Screen.sprite(screen)
   args.outputs.labels << { x: 0, y: 720, text: args.gtk.current_framerate.to_i.to_s, **Colors::TEXT }

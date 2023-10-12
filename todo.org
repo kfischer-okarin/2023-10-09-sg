@@ -7,10 +7,10 @@
 :END:
 
 
-** TODO Rush into enemy hurts/kills them
+** DONE Rush into enemy hurts/kills them
 
 
-** TODO Win State - Kill all enemies
+** DONE Win State - Kill all enemies
 
 
 ** TODO Crescent Moon
@@ -26,3 +26,7 @@
 - [ ] Screen shake when hitting wall
 - [ ] Dazed ? when hitting wall?
 
+
+** TODO Gore
+
+** TODO Better Game Over Screen
