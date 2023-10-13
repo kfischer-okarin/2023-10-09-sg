@@ -19,12 +19,14 @@ def setup(args)
   args.state.player = {
     x: 160, y: 90, w: 9, h: 9,
     face_angle: 0, v_x: 0, v_y: 0,
-    state: { type: :movement }
+    state: { type: :movement },
+    collision_radius: 5
   }
   args.state.crescent_moon = {
     x: 200, y: 100, w: 11, h: 11,
     face_angle: 0, v_x: 0, v_y: 0,
-    state: { type: :movement }
+    state: { type: :movement },
+    collision_radius: 5
   }
   args.state.moving_entities = [
     args.state.player,
@@ -190,8 +192,12 @@ def handle_player_rushing(args, player)
   rushing_state = player[:state]
   execute_rush(player)
 
-  damage_enemies_hit_by_rush(player, args.state.enemies)
-  args.state.game_state = :won if args.state.enemies.all? { |enemy| enemy[:state][:type] == :dead }
+  enemies = args.state.enemies
+  hit_enemies = moving_entity_collisions(player, enemies)
+  hit_enemies.each do |enemy|
+    enemy[:state] = { type: :dead, ticks: 0 }
+  end
+  args.state.game_state = :won if enemies.all? { |enemy| enemy[:state][:type] == :dead }
 
   player[:state] = { type: :movement } if rushing_state[:power].zero?
 end
@@ -206,16 +212,13 @@ def execute_rush(player)
   player[:v_y] = Math.sin(player[:face_angle]) * rush_speed
 end
 
-def damage_enemies_hit_by_rush(player, enemies)
-  enemies.each do |enemy|
-    has_collided = sphere_capsule_collision?(
-      enemy[:x], enemy[:y], 5,
-      player[:x], player[:y], player[:x] + player[:v_x], player[:y] + player[:v_y], 5
+def moving_entity_collisions(entity, targets)
+  targets.select { |target|
+    Collision.sphere_capsule_collision?(
+      target[:x], target[:y], target[:collision_radius],
+      entity[:x], entity[:y], entity[:x] + entity[:v_x], entity[:y] + entity[:v_y], entity[:collision_radius]
     )
-    next unless has_collided
-
-    enemy[:state] = { type: :dead, ticks: 0 }
-  end
+  }
 end
 
 def render(args)
