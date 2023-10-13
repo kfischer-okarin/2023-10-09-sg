@@ -18,12 +18,12 @@ def setup(args)
   args.state.player = {
     x: 160, y: 90, w: 9, h: 9,
     face_angle: 0, v_x: 0, v_y: 0,
-    state: { type: :normal }
+    state: { type: :movement }
   }
   args.state.crescent_moon = {
     x: 200, y: 100, w: 11, h: 11,
     face_angle: 0, v_x: 0, v_y: 0,
-    state: { type: :normal }
+    state: { type: :movement }
   }
   args.state.moving_entities = [
     args.state.player,
@@ -81,90 +81,118 @@ def process_input(args)
     right: left_right.positive?,
     up: up_down.positive?,
     down: up_down.negative?,
-    charge: keyboard_key_down.space || keyboard_key_held.space,
+    charge: keyboard_key_down.space || keyboard_key_held.space
   }
 end
 
 def update(args)
-  player_inputs = args.state.player_inputs
   player = args.state.player
   player_state = player[:state]
-  case player_state[:type]
-  when :normal
-    return if args.state.game_state == :won
 
-    player[:v_x] = 0
-    player[:v_y] = 0
-
-    if player_inputs[:left]
-      player[:v_x] = - 1
-    elsif player_inputs[:right]
-      player[:v_x] = 1
-    end
-
-    if player_inputs[:up]
-      player[:v_y] = 1
-    elsif player_inputs[:down]
-      player[:v_y] = -1
-    end
-
-    player[:face_angle] = Math.atan2(player[:v_y], player[:v_x]) unless player[:v_x].zero? && player[:v_y].zero?
-
-    if player_inputs[:charge]
-      player[:state] = { type: :charging, ticks: 0, power: 0 }
-      player[:v_x] = 0
-      player[:v_y] = 0
-      args.state.charge_particles = []
-    end
-  when :charging
-    player_state[:ticks] += 1
-    player_state[:power] = [player_state[:ticks], 120].min
-    player_state[:ready] = player_state[:power] >= 40
-
-    args.state.charge_particles << player_charge_particle(player, args.state.sprites.circle)
-
-    args.state.charge_particles.each do |particle|
-      Animations.perform_tick(particle[:animation])
-      particle[:x] = player[:x] + Math.cos(particle[:angle_from_player]) * particle[:distance]
-      particle[:y] = player[:y] + Math.sin(particle[:angle_from_player]) * particle[:distance]
-    end
-    args.state.charge_particles.reject! { |particle| Animations.finished?(particle[:animation]) }
-
-    if player_state[:ready]
-      simulation_player = player.dup
-      simulation_player[:state] = { type: :rushing, power: player_state[:power] }
-      distance_x = 0
-      distance_y = 0
-      until simulation_player[:state][:power].zero?
-        execute_rush(simulation_player)
-        distance_x += simulation_player[:v_x]
-        distance_y += simulation_player[:v_y]
-      end
-      player_state[:predicted_distance] = Math.sqrt(distance_x**2 + distance_y**2)
-    end
-
-    unless player_inputs[:charge]
-      if player_state[:ready]
-        player[:state] = { type: :rushing, power: player_state[:power] }
-      else
-        player[:state] = { type: :normal }
-      end
-    end
-  when :rushing
-    execute_rush(player)
-    player[:state] = { type: :normal } if player_state[:power].zero?
-  end
-
-  if player[:state][:type] == :rushing
-    handle_rush_hits_enemy(player, args.state.enemies)
-
-    args.state.game_state = :won if args.state.enemies.all? { |enemy| enemy[:state][:type] == :dead }
-  end
+  send("handle_player_#{player_state[:type]}", args, player)
+  return if args.state.game_state == :won
 
   args.state.moving_entities.each do |entity|
     entity[:x] += entity[:v_x]
     entity[:y] += entity[:v_y]
   end
+end
+
+def handle_player_movement(args, player)
+  return if args.state.game_state == :won
+
+  player_inputs = args.state.player_inputs
+
+  update_player_velocity(player, player_inputs)
+  update_face_angle(player, player[:v_x], player[:v_y]) if moving?(player)
+  return unless player_inputs[:charge]
+
+  start_charging(args, player)
+end
+
+def update_player_velocity(player, player_inputs)
+  player[:v_x] = 0
+  player[:v_y] = 0
+
+  if player_inputs[:left]
+    player[:v_x] -= 1
+  elsif player_inputs[:right]
+    player[:v_x] += 1
+  end
+
+  if player_inputs[:up]
+    player[:v_y] += 1
+  elsif player_inputs[:down]
+    player[:v_y] -= 1
+  end
+end
+
+def update_face_angle(entity, direction_x, direction_y)
+  entity[:face_angle] = Math.atan2(direction_y, direction_x)
+end
+
+def moving?(entity)
+  entity[:v_x].nonzero? || entity[:v_y].nonzero?
+end
+
+def start_charging(args, player)
+  player[:state] = { type: :charging, ticks: 0, power: 0 }
+  player[:v_x] = 0
+  player[:v_y] = 0
+
+  args.state.charge_particles = []
+end
+
+def handle_player_charging(args, player)
+  player_inputs = args.state.player_inputs
+  charging_state = player[:state]
+
+  if player_inputs[:charge]
+    charging_state[:ticks] += 1
+    charging_state[:power] = [charging_state[:ticks], 120].min
+    charging_state[:ready] = charging_state[:power] >= 40
+
+    particles = args.state.charge_particles
+    particles << player_charge_particle(player, args.state.sprites.circle)
+
+    particles.each do |particle|
+      Animations.perform_tick(particle[:animation])
+      particle[:x] = player[:x] + Math.cos(particle[:angle_from_player]) * particle[:distance]
+      particle[:y] = player[:y] + Math.sin(particle[:angle_from_player]) * particle[:distance]
+    end
+    particles.reject! { |particle| Animations.finished?(particle[:animation]) }
+
+    charging_state[:predicted_distance] = predict_rush_distance(player) if charging_state[:ready]
+  else
+    if charging_state[:ready]
+      player[:state] = { type: :rushing, power: charging_state[:power] }
+    else
+      player[:state] = { type: :movement }
+    end
+  end
+end
+
+def predict_rush_distance(player)
+  simulated_player = player.dup
+  simulated_player[:state] = { type: :rushing, power: player[:state][:power] }
+  distance_x = 0
+  distance_y = 0
+  until simulated_player[:state][:power].zero?
+    execute_rush(simulated_player)
+    distance_x += simulated_player[:v_x]
+    distance_y += simulated_player[:v_y]
+  end
+  Math.sqrt((distance_x**2) + (distance_y**2))
+end
+
+def handle_player_rushing(args, player)
+  rushing_state = player[:state]
+  execute_rush(player)
+
+  damage_enemies_hit_by_rush(player, args.state.enemies)
+  args.state.game_state = :won if args.state.enemies.all? { |enemy| enemy[:state][:type] == :dead }
+
+  player[:state] = { type: :movement } if rushing_state[:power].zero?
 end
 
 def execute_rush(player)
@@ -177,7 +205,7 @@ def execute_rush(player)
   player[:v_y] = Math.sin(player[:face_angle]) * rush_speed
 end
 
-def handle_rush_hits_enemy(player, enemies)
+def damage_enemies_hit_by_rush(player, enemies)
   enemies.each do |enemy|
     has_collided = sphere_capsule_collision?(
       enemy[:x], enemy[:y], 5,
@@ -245,7 +273,7 @@ def render(args)
 
   screen_render_target.sprites << player_facing_triangle
 
-  if args.state.game_state == :won && player_state[:type] == :normal
+  if args.state.game_state == :won && player_state[:type] == :movement
     screen_render_target.labels << {
       x: 160, y: 90, text: 'You Win!', size_px: 39, font: 'fonts/notalot.ttf',
       alignment_enum: 1, vertical_alignment_enum: 1, **Colors::TEXT
