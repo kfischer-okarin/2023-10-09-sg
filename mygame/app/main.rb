@@ -32,6 +32,10 @@ def setup(args)
   args.state.projectiles = []
   args.state.paused = false
   args.state.animations = []
+  args.state.screen_flash = {
+    x: 0, y: 0, w: args.state.screen[:x_resolution], h: args.state.screen[:y_resolution],
+    path: :pixel, a: 0
+  }
   prepare_sprites(args)
 end
 
@@ -90,7 +94,8 @@ def update(args)
   args.state.paused = !args.state.paused if args.state.player_inputs[:pause]
 
   unless args.state.paused
-    Player.tick(args, args.state.player)
+    player = args.state.player
+    Player.tick(args, player)
     return if args.state.game_state == :won
 
     args.state.enemies.each do |enemy|
@@ -104,6 +109,8 @@ def update(args)
       projectile[:type].tick(args, projectile)
     end
     projectiles.select! { |projectile| projectile[:alive] }
+
+    Player.handle_hits(args, player)
 
     (args.state.moving_entities + args.state.projectiles).each do |entity|
       entity[:x] += entity[:v_x]
@@ -174,6 +181,8 @@ def render(args)
   screen_render_target.sprites << args.state.projectiles.map { |projectile|
     projectile.merge(x: scaled_to_screen(projectile[:x]), y: scaled_to_screen(projectile[:y]))
   }
+
+  screen_render_target.sprites << args.state.screen_flash
 
   if args.state.game_state == :won && player_state[:type] == :movement
     screen_render_target.labels << {

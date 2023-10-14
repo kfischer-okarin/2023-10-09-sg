@@ -7,7 +7,8 @@ module Player
         face_angle: 0, v_x: 0, v_y: 0,
         state: { type: :movement },
         collision_radius: 50,
-        hits: []
+        hits: [],
+        last_hurt_tick: -1000
       }
     end
 
@@ -27,6 +28,21 @@ module Player
         **Colors::PLAYER
       }
     end
+
+    def handle_hits(args, player)
+      return unless player[:hits].any?
+
+      if args.state.tick_count - player[:last_hurt_tick] > 60
+        player[:last_hurt_tick] = args.state.tick_count
+        args.state.screen_flash.merge!(Colors::BLOOD)
+        args.state.screen_flash[:a] = 255
+        args.state.animations << Animations.lerp(args.state.screen_flash, to: { a: 0 }, duration: 0.5.seconds)
+      end
+
+      player[:hits].clear
+    end
+
+    private
 
     def handle_movement(args, player)
       return if args.state.game_state == :won
