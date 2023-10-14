@@ -7,7 +7,8 @@ module Enemies
           type: CrescentMoon,
           face_angle: 0, v_x: 0, v_y: 0,
           state: { type: :move_into_attack_position },
-          collision_radius: 50
+          collision_radius: 50,
+          color: Colors::CRESCENT_MOON
         }
       end
 
@@ -18,7 +19,7 @@ module Enemies
       end
 
       def sprite(crescent_moon)
-        color = crescent_moon[:state][:type] == :dead ? Colors::BLOOD : Colors::CRESCENT_MOON
+        color = crescent_moon[:state][:type] == :dead ? Colors::BLOOD : crescent_moon[:color]
         {
           x: scaled_to_screen(crescent_moon[:x]) - crescent_moon[:w].idiv(2),
           y: scaled_to_screen(crescent_moon[:y]) - crescent_moon[:h].idiv(2),
@@ -41,7 +42,7 @@ module Enemies
         if distance_to_attack_position < 50
           crescent_moon[:v_x] = 0
           crescent_moon[:v_y] = 0
-          crescent_moon[:state] = { type: :attack }
+          crescent_moon[:state] = { type: :telegraph_attack }
           return
         end
 
@@ -67,17 +68,61 @@ module Enemies
         from_furthest_to_closest[rand(3)]
       end
 
+      def handle_telegraph_attack(args, crescent_moon)
+        state = crescent_moon[:state]
+        unless state[:flash_animation]
+          crescent_moon[:color] = Colors::FLASH.dup
+          state[:flash_animation] = Animations.lerp(
+            crescent_moon[:color],
+            to: Colors::CRESCENT_MOON,
+            duration: 30
+          )
+        end
+
+        Animations.perform_tick(state[:flash_animation])
+
+        crescent_moon[:state] = { type: :attack } if Animations.finished? state[:flash_animation]
+      end
+
+      module Shuriken
+        class << self
+          def tick(args, projectile)
+            projectile[:alive] = on_screen?(projectile)
+            projectile[:angle] = args.state.tick_count.mod_zero?(4) ? 0 : 90
+          end
+        end
+      end
+
       def handle_attack(args, crescent_moon)
         state = crescent_moon[:state]
         state[:ticks] ||= 0
+        if state[:ticks].zero?
+          args.audio[:shuriken] = { input: 'audio/shuriken.mp3' }
+          projectile_speed = 20
+          projectile_angle = crescent_moon.angle_to(args.state.player).to_radians
+          projectile_start_x = crescent_moon[:x] + Math.cos(projectile_angle) * 50
+          projectile_start_y = crescent_moon[:y] + Math.sin(projectile_angle) * 50
+          [-20, 0, 20].each do |angle_offset|
+            angle = projectile_angle + angle_offset.to_radians
+            args.state.projectiles << {
+              x: projectile_start_x,
+              y: projectile_start_y,
+              v_x: Math.cos(angle) * projectile_speed,
+              v_y: Math.sin(angle) * projectile_speed,
+              w: 5, h: 5,
+              type: Shuriken,
+              collision_radius: 3,
+              path: 'sprites/shuriken.png',
+              alive: true,
+              angle: 0,
+              **Colors::CRESCENT_MOON_SHURIKEN
+            }
+          end
+        end
 
         state[:ticks] += 1
 
-        if state[:ticks] == 120
-          puts "Pew pew!"
-        elsif state[:ticks] == 180
-          crescent_moon[:state] = { type: :move_into_attack_position }
-        end
+        crescent_moon[:state] = { type: :move_into_attack_position } if state[:ticks] >= 120
       end
 
       GOAL_ATTRACTION_FORCE = 10
@@ -97,7 +142,6 @@ module Enemies
           y: strength * (goal[:y] - position[:y]) / distance
         }
       end
-
 
       PLAYER_REPULSION_FORCE = 5
       PLAYER_REPULSION_REACH = 1000

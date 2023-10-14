@@ -14,7 +14,7 @@
 
 
 ** TODO Crescent Moon
-- [ ] Movement
+- [X] Movement
 - [ ] Explosive Projectives
 
 

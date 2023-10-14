@@ -135,7 +135,5 @@ module Player
       player[:v_x] = Math.cos(player[:face_angle]) * rush_speed
       player[:v_y] = Math.sin(player[:face_angle]) * rush_speed
     end
-
-    
   end
 end

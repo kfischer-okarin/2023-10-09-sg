@@ -29,6 +29,7 @@ def setup(args)
     args.state.crescent_moon
   ]
   args.state.charge_particles = []
+  args.state.projectiles = []
   args.state.paused = false
   prepare_sprites(args)
 end
@@ -91,19 +92,19 @@ def update(args)
     Player.tick(args, args.state.player)
     return if args.state.game_state == :won
 
-
     args.state.enemies.each do |enemy|
       next if enemy[:state][:type] == :dead
 
       enemy[:type].tick(args, enemy)
     end
 
-    scale = WORLD_TO_SCREEN_SCALE
-    args.state.moving_entities.each do |entity|
-      if args.state.tick_count.mod_zero? 10
-        entity[:x] = (entity[:x] / scale).round * scale
-        entity[:y] = (entity[:y] / scale).round * scale
-      end
+    projectiles = args.state.projectiles
+    projectiles.each do |projectile|
+      projectile[:type].tick(args, projectile)
+    end
+    projectiles.select! { |projectile| projectile[:alive] }
+
+    (args.state.moving_entities + args.state.projectiles).each do |entity|
       entity[:x] += entity[:v_x]
       entity[:y] += entity[:v_y]
     end
@@ -163,6 +164,10 @@ def render(args)
   end
 
   screen_render_target.sprites << player_facing_triangle
+
+  screen_render_target.sprites << args.state.projectiles.map { |projectile|
+    projectile.merge(x: scaled_to_screen(projectile[:x]), y: scaled_to_screen(projectile[:y]))
+  }
 
   if args.state.game_state == :won && player_state[:type] == :movement
     screen_render_target.labels << {
