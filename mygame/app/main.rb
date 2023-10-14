@@ -16,6 +16,7 @@ def tick(args)
 end
 
 def setup(args)
+  args.state.debug_allowed = !$gtk.production?
   args.state.screen = Screen::GBA_STYLE
   args.state.game_state = :playing
   args.state.player = Player.build(x: 1600, y: 900)
@@ -28,6 +29,7 @@ def setup(args)
     args.state.crescent_moon
   ]
   args.state.charge_particles = []
+  args.state.paused = false
   prepare_sprites(args)
 end
 
@@ -76,29 +78,38 @@ def process_input(args)
     right: left_right.positive?,
     up: up_down.positive?,
     down: up_down.negative?,
-    charge: keyboard_key_down.space || keyboard_key_held.space
+    charge: keyboard_key_down.space || keyboard_key_held.space,
+    pause: keyboard_key_down.escape,
+    toggle_force_debug: keyboard_key_down.one
   }
 end
 
 def update(args)
-  Player.tick(args, args.state.player)
-  return if args.state.game_state == :won
+  args.state.paused = !args.state.paused if args.state.player_inputs[:pause]
 
-  args.state.enemies.each do |enemy|
-    next if enemy[:state][:type] == :dead
+  unless args.state.paused
+    Player.tick(args, args.state.player)
+    return if args.state.game_state == :won
 
-    enemy[:type].tick(args, enemy)
-  end
 
-  scale = WORLD_TO_SCREEN_SCALE
-  args.state.moving_entities.each do |entity|
-    if moving_diagonally?(entity) && (entity[:x] % scale) != (entity[:y] % scale)
-      entity[:x] = (entity[:x] / scale).round * scale
-      entity[:y] = (entity[:y] / scale).round * scale
+    args.state.enemies.each do |enemy|
+      next if enemy[:state][:type] == :dead
+
+      enemy[:type].tick(args, enemy)
     end
-    entity[:x] += entity[:v_x]
-    entity[:y] += entity[:v_y]
+
+    scale = WORLD_TO_SCREEN_SCALE
+    args.state.moving_entities.each do |entity|
+      if args.state.tick_count.mod_zero? 10
+        entity[:x] = (entity[:x] / scale).round * scale
+        entity[:y] = (entity[:y] / scale).round * scale
+      end
+      entity[:x] += entity[:v_x]
+      entity[:y] += entity[:v_y]
+    end
   end
+
+  handle_debug(args) if args.state.debug_allowed
 end
 
 def update_face_angle(entity, direction_x, direction_y)
@@ -160,8 +171,17 @@ def render(args)
     }
   end
 
+  if args.state.paused
+    screen_render_target.labels << {
+      x: 160, y: 120, text: 'Paused', size_px: 13, font: 'fonts/notalot.ttf',
+      alignment_enum: 1, vertical_alignment_enum: 1, **Colors::TEXT
+    }
+  end
+
   args.outputs.sprites << Screen.sprite(screen)
   args.outputs.labels << { x: 0, y: 720, text: args.gtk.current_framerate.to_i.to_s, **Colors::TEXT }
+
+  render_debug(args, screen_render_target) if args.state.debug_allowed
 end
 
 def facing_triangle(entity, triangle_sprite, distance: 10)
@@ -193,6 +213,72 @@ WORLD_TO_SCREEN_SCALE = 10
 
 def scaled_to_screen(value)
   (value / WORLD_TO_SCREEN_SCALE).round
+end
+
+def handle_debug(args)
+  player_inputs = args.state.player_inputs
+  args.state.force_debug = !args.state.force_debug if player_inputs[:toggle_force_debug]
+end
+
+def render_debug(args, screen_render_target)
+  args.state.debug_label_y = 720
+  render_force_debug(args, screen_render_target) if args.state.force_debug
+end
+
+def render_force_debug(args, screen_render_target)
+  args.outputs.labels << {
+    x: 1280, y: args.state.debug_label_y, text: 'FORCE DEBUG', alignment_enum: 2,
+    **Colors::TEXT
+  }
+  args.state.debug_label_y -= 20
+
+  mouse_position = { x: args.inputs.mouse.x, y: args.inputs.mouse.y }
+  screen_mouse_position = Screen.to_screen_position(args.state.screen, mouse_position)
+  world_mouse_position = {
+    x: screen_mouse_position.x * WORLD_TO_SCREEN_SCALE,
+    y: screen_mouse_position.y * WORLD_TO_SCREEN_SCALE
+  }
+  player = args.state.player
+
+  x = mouse_position[:x] + 10
+  y = mouse_position[:y] + 50
+  args.outputs.labels << {
+    x: x, y: y, text: "World Position: #{world_mouse_position}",
+    **Colors::TEXT
+  }
+  y -= 20
+  crescent_moon = args.state.crescent_moon
+  crescent_moon_state = crescent_moon[:state]
+  if crescent_moon[:state][:attack_position]
+    goal_attraction_force = Enemies::CrescentMoon.goal_attraction_force(
+      crescent_moon_state[:attack_position],
+      world_mouse_position
+    )
+    screen_render_target.sprites << {
+      x: scaled_to_screen(crescent_moon_state[:attack_position][:x]) - 1,
+      y: scaled_to_screen(crescent_moon_state[:attack_position][:y]) - 1,
+      w: 3, h: 3, path: :circle, **Colors::TEXT
+    }
+    args.outputs.labels << {
+      x: x, y: y, text: "Goal Attraction: #{format_vector(goal_attraction_force)}",
+      **Colors::TEXT
+    }
+    y -= 20
+  end
+  player_repulsion_force = Enemies::CrescentMoon.player_repulsion_force(player, world_mouse_position)
+  args.outputs.labels << {
+    x: x, y: y, text: "Player Repulsion: #{format_vector(player_repulsion_force)}",
+    **Colors::TEXT
+  }
+end
+
+def unit_vector(vector)
+  length = Math.sqrt((vector[:x] * vector[:x]) + (vector[:y] * vector[:y]))
+  { x: vector[:x] / length, y: vector[:y] / length }
+end
+
+def format_vector(vector)
+  "[%.2f, %.2f] (%.2f)" % [vector[:x], vector[:y], Math.sqrt((vector[:x] * vector[:x]) + (vector[:y] * vector[:y]))]
 end
 
 $gtk.reset
