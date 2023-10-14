@@ -272,13 +272,34 @@ def render_force_debug(args, screen_render_target)
   }
 end
 
+def positions_around(position, distance:, count: 8)
+  offset = rand * (Math::PI / 4)
+  angle_between_positions = (2 * Math::PI) / count
+  (0...count).map { |i|
+    angle = offset + (angle_between_positions * i)
+    {
+      x: position[:x] + Math.cos(angle) * distance,
+      y: position[:y] + Math.sin(angle) * distance
+    }
+  }
+end
+
+def on_screen?(position)
+  position[:x].between?(0, 3199) && position[:y].between?(0, 1799)
+end
+
+def point_inside_rect?(point, rect)
+  point[:x].between?(rect[:x], rect[:x] + rect[:w] - 1) &&
+    point[:y].between?(rect[:y], rect[:y] + rect[:h] - 1)
+end
+
 def unit_vector(vector)
   length = Math.sqrt((vector[:x] * vector[:x]) + (vector[:y] * vector[:y]))
   { x: vector[:x] / length, y: vector[:y] / length }
 end
 
 def format_vector(vector)
-  "[%.2f, %.2f] (%.2f)" % [vector[:x], vector[:y], Math.sqrt((vector[:x] * vector[:x]) + (vector[:y] * vector[:y]))]
+  '[%.2f, %.2f] (%.2f)' % [vector[:x], vector[:y], Math.sqrt((vector[:x] * vector[:x]) + (vector[:y] * vector[:y]))]
 end
 
 $gtk.reset

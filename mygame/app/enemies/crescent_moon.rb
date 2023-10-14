@@ -34,8 +34,7 @@ module Enemies
       def handle_move_into_attack_position(args, crescent_moon)
         player = args.state.player
         state = crescent_moon[:state]
-        # TODO: Better attack position calculation
-        state[:attack_position] ||= { x: rand(3000) + 100, y: rand(1600) + 100 }
+        state[:attack_position] ||= a_position_behind_the_player(player, crescent_moon)
         speed = 12
 
         distance_to_attack_position = $geometry.distance(crescent_moon, state[:attack_position])
@@ -56,6 +55,16 @@ module Enemies
         velocity = Math.sqrt((crescent_moon[:v_x] * crescent_moon[:v_x]) + (crescent_moon[:v_y] * crescent_moon[:v_y]))
         crescent_moon[:v_x] = crescent_moon[:v_x] * speed / velocity
         crescent_moon[:v_y] = crescent_moon[:v_y] * speed / velocity
+      end
+
+      def a_position_behind_the_player(player, crescent_moon)
+        positions_around_player = positions_around(player, distance: 600).select { |position|
+          on_screen?(position)
+        }
+        from_furthest_to_closest = positions_around_player.sort_by { |position|
+          -$geometry.distance(position, crescent_moon)
+        }
+        from_furthest_to_closest[rand(3)]
       end
 
       def handle_attack(args, crescent_moon)
@@ -90,8 +99,8 @@ module Enemies
       end
 
 
-      PLAYER_REPULSION_FORCE = 9
-      PLAYER_REPULSION_REACH = 500
+      PLAYER_REPULSION_FORCE = 5
+      PLAYER_REPULSION_REACH = 1000
       def player_repulsion_force(player, position)
         distance = $geometry.distance(player, position)
         return { x: 0, y: 0 } if distance > PLAYER_REPULSION_REACH
