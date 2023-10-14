@@ -31,6 +31,7 @@ def setup(args)
   args.state.charge_particles = []
   args.state.projectiles = []
   args.state.paused = false
+  args.state.animations = []
   prepare_sprites(args)
 end
 
@@ -142,6 +143,11 @@ def render(args)
     path: :pixel, **Colors::BACKGROUND
   }
 
+  args.state.animations.each do |animation|
+    Animations.perform_tick animation
+  end
+  args.state.animations.reject! { |animation| Animations.finished? animation }
+
   screen_render_target.sprites << Enemies::CrescentMoon.sprite(args.state.crescent_moon)
 
   player = args.state.player
@@ -199,7 +205,7 @@ def facing_triangle(entity, triangle_sprite, distance: 10)
   )
 end
 
-def player_charge_particle(player, circle_sprite)
+def player_charge_particle(args, circle_sprite)
   sprite = circle_sprite.to_sprite(
     angle_from_player: rand * 2 * Math::PI,
     distance: 300,
@@ -211,6 +217,7 @@ def player_charge_particle(player, circle_sprite)
     to: { distance: 0, a: 255, w: 1, h: 1 },
     duration: 20
   )
+  args.state.animations << sprite[:animation]
   sprite
 end
 

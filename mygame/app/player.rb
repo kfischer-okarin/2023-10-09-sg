@@ -6,14 +6,15 @@ module Player
         x: x, y: y, w: 9, h: 9,
         face_angle: 0, v_x: 0, v_y: 0,
         state: { type: :movement },
-        collision_radius: 50
+        collision_radius: 50,
+        hits: []
       }
     end
 
     def tick(args, player)
       player_state = player[:state]
 
-      send("handle_#{player_state[:type]}", args, player)  
+      send("handle_#{player_state[:type]}", args, player)
     end
 
     def sprite(player)
@@ -80,10 +81,9 @@ module Player
         charging_state[:ready] = charging_state[:power] >= 40
 
         particles = args.state.charge_particles
-        particles << player_charge_particle(player, args.state.sprites.circle)
+        particles << player_charge_particle(args, args.state.sprites.circle)
 
         particles.each do |particle|
-          Animations.perform_tick(particle[:animation])
           particle[:x] = scaled_to_screen(player[:x] + Math.cos(particle[:angle_from_player]) * particle[:distance])
           particle[:y] = scaled_to_screen(player[:y] + Math.sin(particle[:angle_from_player]) * particle[:distance])
         end

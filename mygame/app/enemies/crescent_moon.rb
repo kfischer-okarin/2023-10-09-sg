@@ -77,9 +77,8 @@ module Enemies
             to: Colors::FLASH,
             duration: 30
           )
+          args.state.animations << state[:flash_animation]
         end
-
-        Animations.perform_tick(state[:flash_animation])
 
         if Animations.finished? state[:flash_animation]
           crescent_moon[:state] = { type: :attack }
@@ -92,6 +91,16 @@ module Enemies
           def tick(args, projectile)
             projectile[:alive] = on_screen?(projectile)
             projectile[:angle] = args.state.tick_count.mod_zero?(4) ? 0 : 90
+
+            player = args.state.player
+            player_was_hit = Collision.sphere_capsule_collision?(
+              player[:x], player[:y], player[:collision_radius],
+              projectile[:x], projectile[:y], projectile[:x] + projectile[:v_x], projectile[:y] + projectile[:v_y], projectile[:collision_radius]
+            )
+            if player_was_hit
+              projectile[:alive] = false
+              player[:hits] << :shuriken
+            end
           end
         end
       end
