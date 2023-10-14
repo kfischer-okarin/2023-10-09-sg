@@ -42,4 +42,6 @@ module Colors
   CRESCENT_MOON_SHURIKEN = DawnBringer32::WHITE
   BLOOD = DawnBringer32::RED
   FLASH = DawnBringer32::WHITE
+  HP_BAR_BACKGROUND = DawnBringer32::OLD_SILVER
+  HP_BAR = DawnBringer32::RED
 end

@@ -96,7 +96,7 @@ def update(args)
   unless args.state.paused
     player = args.state.player
     Player.tick(args, player)
-    return if args.state.game_state == :won
+    return if %i[won lost].include? args.state.game_state
 
     args.state.enemies.each do |enemy|
       next if enemy[:state][:type] == :dead
@@ -182,11 +182,21 @@ def render(args)
     projectile.merge(x: scaled_to_screen(projectile[:x]), y: scaled_to_screen(projectile[:y]))
   }
 
+  screen_render_target.sprites << Player.hp_bar_sprite(player)
+
   screen_render_target.sprites << args.state.screen_flash
 
-  if args.state.game_state == :won && player_state[:type] == :movement
+  game_state = args.state.game_state
+  if game_state == :won && player_state[:type] == :movement
     screen_render_target.labels << {
       x: 160, y: 90, text: 'You Win!', size_px: 39, font: 'fonts/notalot.ttf',
+      alignment_enum: 1, vertical_alignment_enum: 1, **Colors::TEXT
+    }
+  end
+
+  if game_state == :lost && player_state[:type] == :movement
+    screen_render_target.labels << {
+      x: 160, y: 90, text: 'You Lose!', size_px: 39, font: 'fonts/notalot.ttf',
       alignment_enum: 1, vertical_alignment_enum: 1, **Colors::TEXT
     }
   end

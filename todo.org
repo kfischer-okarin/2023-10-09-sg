@@ -13,13 +13,13 @@
 ** DONE Win State - Kill all enemies
 
 
-** TODO Crescent Moon
-- [X] Movement
-- [ ] Explosive Projectives
-
-
-** TODO Game Over State
+** DONE Game Over State
 - Health zero
+
+
+** DONE Crescent Moon
+- [X] Movement
+- [X] Projectives
 
 
 ** TODO Stage boundaries

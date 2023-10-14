@@ -8,7 +8,8 @@ module Player
         state: { type: :movement },
         collision_radius: 50,
         hits: [],
-        last_hurt_tick: -1000
+        last_hurt_tick: -1000,
+        hp: 60
       }
     end
 
@@ -29,6 +30,25 @@ module Player
       }
     end
 
+    def hp_bar_sprite(player)
+      x = 240
+      y = 10
+      w = 60
+      h = 3
+      [
+        {
+          x: x - 1, y: y, w: w + 2, h: h + 2,
+          path: :pixel,
+          **Colors::HP_BAR_BACKGROUND
+        },
+        {
+          x: x, y: y + 1, w: (w * player[:hp] / 60).round, h: h,
+          path: :pixel,
+          **Colors::HP_BAR
+        }
+      ]
+    end
+
     def handle_hits(args, player)
       return unless player[:hits].any?
 
@@ -39,6 +59,14 @@ module Player
         args.state.animations << Animations.lerp(args.state.screen_flash, to: { a: 0 }, duration: 0.5.seconds)
       end
 
+      player[:hits].each do |hit|
+        case hit
+        when :shuriken
+          player[:hp] -= 1
+        end
+      end
+      player[:hp] = 0 if player[:hp].negative?
+      args.state.game_state = :lost if player[:hp].zero?
       player[:hits].clear
     end
 
