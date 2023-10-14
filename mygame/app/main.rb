@@ -17,16 +17,16 @@ def setup(args)
   args.state.screen = Screen::GBA_STYLE
   args.state.game_state = :playing
   args.state.player = {
-    x: 160, y: 90, w: 9, h: 9,
+    x: 1600, y: 900, w: 9, h: 9,
     face_angle: 0, v_x: 0, v_y: 0,
     state: { type: :movement },
-    collision_radius: 5
+    collision_radius: 50
   }
   args.state.crescent_moon = {
-    x: 200, y: 100, w: 11, h: 11,
+    x: 2000, y: 1000, w: 11, h: 11,
     face_angle: 0, v_x: 0, v_y: 0,
     state: { type: :movement },
-    collision_radius: 5
+    collision_radius: 50
   }
   args.state.moving_entities = [
     args.state.player,
@@ -160,8 +160,8 @@ def handle_player_charging(args, player)
 
     particles.each do |particle|
       Animations.perform_tick(particle[:animation])
-      particle[:x] = player[:x] + Math.cos(particle[:angle_from_player]) * particle[:distance]
-      particle[:y] = player[:y] + Math.sin(particle[:angle_from_player]) * particle[:distance]
+      particle[:x] = scaled_to_screen(player[:x] + Math.cos(particle[:angle_from_player]) * particle[:distance])
+      particle[:y] = scaled_to_screen(player[:y] + Math.sin(particle[:angle_from_player]) * particle[:distance])
     end
     particles.reject! { |particle| Animations.finished?(particle[:animation]) }
 
@@ -207,7 +207,7 @@ def execute_rush(player)
   rushing_state[:power] = [rushing_state[:power] - 10, 0].max
   return if rushing_state[:power].zero?
 
-  rush_speed = rushing_state[:power].idiv(2)
+  rush_speed = rushing_state[:power].idiv(2) * 10
   player[:v_x] = Math.cos(player[:face_angle]) * rush_speed
   player[:v_y] = Math.sin(player[:face_angle]) * rush_speed
 end
@@ -241,10 +241,11 @@ def render(args)
     screen_render_target.sprites << args.state.charge_particles
     player_facing_triangle[:a] = 128
     if player_state[:ready]
+      predicted_distance_on_screen = scaled_to_screen(player_state[:predicted_distance])
       player_facing_triangle = facing_triangle(
         player,
-        args.state.sprites.triangle.merge(w: player_state[:predicted_distance], a: 128),
-        distance: 10 + player_state[:predicted_distance].idiv(2)
+        args.state.sprites.triangle.merge(w: predicted_distance_on_screen, a: 128),
+        distance: 10 + predicted_distance_on_screen.idiv(2)
       )
     end
   end
@@ -264,8 +265,8 @@ end
 
 def player_sprite(player)
   {
-    x: player[:x] - player[:w].idiv(2),
-    y: player[:y] - player[:h].idiv(2),
+    x: scaled_to_screen(player[:x]) - player[:w].idiv(2),
+    y: scaled_to_screen(player[:y]) - player[:h].idiv(2),
     w: player[:w],
     h: player[:h],
     path: :pixel,
@@ -276,8 +277,8 @@ end
 def crescent_moon_sprite(crescent_moon)
   color = crescent_moon[:state][:type] == :dead ? Colors::BLOOD : Colors::CRESCENT_MOON
   {
-    x: crescent_moon[:x] - crescent_moon[:w].idiv(2),
-    y: crescent_moon[:y] - crescent_moon[:h].idiv(2),
+    x: scaled_to_screen(crescent_moon[:x]) - crescent_moon[:w].idiv(2),
+    y: scaled_to_screen(crescent_moon[:y]) - crescent_moon[:h].idiv(2),
     w: crescent_moon[:w],
     h: crescent_moon[:h],
     path: 'sprites/crescent.png',
@@ -287,8 +288,8 @@ end
 
 def facing_triangle(entity, triangle_sprite, distance: 10)
   triangle_sprite.to_sprite(
-    x: entity[:x] + Math.cos(entity[:face_angle]) * distance - triangle_sprite[:w].idiv(2),
-    y: entity[:y] + Math.sin(entity[:face_angle]) * distance - triangle_sprite[:h].idiv(2),
+    x: scaled_to_screen(entity[:x]) + Math.cos(entity[:face_angle]) * distance - triangle_sprite[:w].idiv(2),
+    y: scaled_to_screen(entity[:y]) + Math.sin(entity[:face_angle]) * distance - triangle_sprite[:h].idiv(2),
     angle: entity[:face_angle].to_degrees,
     angle_anchor_x: 0.5, angle_anchor_y: 0.5,
     **Colors::DIRECTION_TRIANGLE
@@ -298,7 +299,7 @@ end
 def player_charge_particle(player, circle_sprite)
   sprite = circle_sprite.to_sprite(
     angle_from_player: rand * 2 * Math::PI,
-    distance: 30,
+    distance: 300,
     w: 11, h: 11,
     r: 255, g: 128, b: 0, a: 128
   )
@@ -308,6 +309,12 @@ def player_charge_particle(player, circle_sprite)
     duration: 20
   )
   sprite
+end
+
+WORLD_TO_SCREEN_SCALE = 10
+
+def scaled_to_screen(value)
+  (value / WORLD_TO_SCREEN_SCALE).round
 end
 
 $gtk.reset
