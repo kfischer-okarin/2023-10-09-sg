@@ -71,17 +71,20 @@ module Enemies
       def handle_telegraph_attack(args, crescent_moon)
         state = crescent_moon[:state]
         unless state[:flash_animation]
-          crescent_moon[:color] = Colors::FLASH.dup
+          crescent_moon[:color] = Colors::CRESCENT_MOON.dup
           state[:flash_animation] = Animations.lerp(
             crescent_moon[:color],
-            to: Colors::CRESCENT_MOON,
+            to: Colors::FLASH,
             duration: 30
           )
         end
 
         Animations.perform_tick(state[:flash_animation])
 
-        crescent_moon[:state] = { type: :attack } if Animations.finished? state[:flash_animation]
+        if Animations.finished? state[:flash_animation]
+          crescent_moon[:state] = { type: :attack }
+          crescent_moon[:color] = Colors::CRESCENT_MOON
+        end
       end
 
       module Shuriken
