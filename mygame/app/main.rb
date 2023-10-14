@@ -95,7 +95,12 @@ def update(args)
   send("handle_player_#{player_state[:type]}", args, player)
   return if args.state.game_state == :won
 
+  scale = WORLD_TO_SCREEN_SCALE
   args.state.moving_entities.each do |entity|
+    if moving_diagonally?(entity) && (entity[:x] % scale) != (entity[:y] % scale)
+      entity[:x] = (entity[:x] / scale).round * scale
+      entity[:y] = (entity[:y] / scale).round * scale
+    end
     entity[:x] += entity[:v_x]
     entity[:y] += entity[:v_y]
   end
@@ -113,21 +118,27 @@ def handle_player_movement(args, player)
   start_charging(args, player)
 end
 
+PLAYER_SPEED = 15
+PLAYER_DIAGONAL_SPEED = (PLAYER_SPEED / Math.sqrt(2)).round
+
 def update_player_velocity(player, player_inputs)
   player[:v_x] = 0
   player[:v_y] = 0
 
   if player_inputs[:left]
-    player[:v_x] -= 1
+    player[:v_x] = -1
   elsif player_inputs[:right]
-    player[:v_x] += 1
+    player[:v_x] = 1
   end
 
   if player_inputs[:up]
-    player[:v_y] += 1
+    player[:v_y] = 1
   elsif player_inputs[:down]
-    player[:v_y] -= 1
+    player[:v_y] = -1
   end
+  speed = moving_diagonally?(player) ? PLAYER_DIAGONAL_SPEED : PLAYER_SPEED
+  player[:v_x] *= speed
+  player[:v_y] *= speed
 end
 
 def update_face_angle(entity, direction_x, direction_y)
@@ -136,6 +147,10 @@ end
 
 def moving?(entity)
   entity[:v_x].nonzero? || entity[:v_y].nonzero?
+end
+
+def moving_diagonally?(entity)
+  entity[:v_x].nonzero? && entity[:v_y].nonzero?
 end
 
 def start_charging(args, player)
