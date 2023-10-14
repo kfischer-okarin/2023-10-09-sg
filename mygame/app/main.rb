@@ -1,5 +1,6 @@
 require 'app/colors.rb'
 require 'app/collision.rb'
+require 'app/enemies/crescent_moon.rb'
 require 'app/player.rb'
 require 'lib/animations.rb'
 require 'lib/screen.rb'
@@ -18,12 +19,7 @@ def setup(args)
   args.state.screen = Screen::GBA_STYLE
   args.state.game_state = :playing
   args.state.player = Player.build(x: 1600, y: 900)
-  args.state.crescent_moon = {
-    x: 2000, y: 1000, w: 11, h: 11,
-    face_angle: 0, v_x: 0, v_y: 0,
-    state: { type: :movement },
-    collision_radius: 50
-  }
+  args.state.crescent_moon = Enemies::CrescentMoon.build(x: 2000, y: 1000)
   args.state.moving_entities = [
     args.state.player,
     args.state.crescent_moon
@@ -88,6 +84,12 @@ def update(args)
   Player.tick(args, args.state.player)
   return if args.state.game_state == :won
 
+  args.state.enemies.each do |enemy|
+    next if enemy[:state][:type] == :dead
+
+    enemy[:type].tick(args, enemy)
+  end
+
   scale = WORLD_TO_SCREEN_SCALE
   args.state.moving_entities.each do |entity|
     if moving_diagonally?(entity) && (entity[:x] % scale) != (entity[:y] % scale)
@@ -128,7 +130,7 @@ def render(args)
     path: :pixel, **Colors::BACKGROUND
   }
 
-  screen_render_target.sprites << crescent_moon_sprite(args.state.crescent_moon)
+  screen_render_target.sprites << Enemies::CrescentMoon.sprite(args.state.crescent_moon)
 
   player = args.state.player
   screen_render_target.sprites << Player.sprite(player)
@@ -160,18 +162,6 @@ def render(args)
 
   args.outputs.sprites << Screen.sprite(screen)
   args.outputs.labels << { x: 0, y: 720, text: args.gtk.current_framerate.to_i.to_s, **Colors::TEXT }
-end
-
-def crescent_moon_sprite(crescent_moon)
-  color = crescent_moon[:state][:type] == :dead ? Colors::BLOOD : Colors::CRESCENT_MOON
-  {
-    x: scaled_to_screen(crescent_moon[:x]) - crescent_moon[:w].idiv(2),
-    y: scaled_to_screen(crescent_moon[:y]) - crescent_moon[:h].idiv(2),
-    w: crescent_moon[:w],
-    h: crescent_moon[:h],
-    path: 'sprites/crescent.png',
-    **color
-  }
 end
 
 def facing_triangle(entity, triangle_sprite, distance: 10)
