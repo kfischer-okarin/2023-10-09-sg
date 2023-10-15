@@ -30,6 +30,7 @@ def setup(args)
   ]
   args.state.charge_particles = []
   args.state.projectiles = []
+  args.state.blood_stains = []
   args.state.paused = false
   args.state.animations = []
   args.state.screen_flash = {

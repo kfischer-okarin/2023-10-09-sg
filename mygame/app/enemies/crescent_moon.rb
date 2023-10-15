@@ -99,7 +99,7 @@ module Enemies
             )
             if player_was_hit
               projectile[:alive] = false
-              player[:hits] << :shuriken
+              player[:hits] << { type: :shuriken, angle: Math.atan2(projectile[:v_y], projectile[:v_x]) }
             end
           end
         end

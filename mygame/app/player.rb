@@ -59,10 +59,23 @@ module Player
         args.state.animations << Animations.lerp(args.state.screen_flash, to: { a: 0 }, duration: 0.5.seconds)
       end
 
+      blood_stains = args.state.blood_stains
+
       player[:hits].each do |hit|
-        case hit
+        case hit[:type]
         when :shuriken
           player[:hp] -= 1
+          sprite = args.state.sprites.blood_splats.sample
+          offset_x = Math.cos(hit[:angle]) * (5 + rand(10)) - sprite[:w].idiv(2)
+          offset_y = Math.sin(hit[:angle]) * (5 + rand(10)) - sprite[:h].idiv(2)
+          angle_rounded_to_90_degrees = (hit[:angle].to_degrees / 90).round * 90
+          blood_stains << sprite.merge(
+            x: scaled_to_screen(player[:x]) + offset_x,
+            y: scaled_to_screen(player[:y]) + offset_y,
+            age: 0,
+            angle: angle_rounded_to_90_degrees,
+            **Colors::BLOOD
+          )
         end
       end
       player[:hp] = 0 if player[:hp].negative?
