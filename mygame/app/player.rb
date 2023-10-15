@@ -164,6 +164,8 @@ module Player
       hit_enemies = moving_entity_collisions(player, enemies)
       hit_enemies.each do |enemy|
         enemy[:state] = { type: :dead, ticks: 0 }
+        enemy[:v_x] = 0
+        enemy[:v_y] = 0
       end
       args.state.game_state = :won if enemies.all? { |enemy| enemy[:state][:type] == :dead }
 
