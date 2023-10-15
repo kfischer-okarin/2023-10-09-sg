@@ -209,7 +209,6 @@ def render(args)
   end
 
   args.outputs.sprites << Screen.sprite(screen)
-  args.outputs.labels << { x: 0, y: 720, text: args.gtk.current_framerate.to_i.to_s, **Colors::TEXT }
 
   render_debug(args, screen_render_target) if args.state.debug_allowed
 end
@@ -252,6 +251,7 @@ def handle_debug(args)
 end
 
 def render_debug(args, screen_render_target)
+  args.outputs.labels << { x: 0, y: 720, text: args.gtk.current_framerate.to_i.to_s, **Colors::TEXT }
   args.state.debug_label_y = 720
   render_force_debug(args, screen_render_target) if args.state.force_debug
 end
