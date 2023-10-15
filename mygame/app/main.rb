@@ -38,6 +38,7 @@ def setup(args)
     path: :pixel, a: 0
   }
   prepare_sprites(args)
+  args.state.gore_layer = prepare_gore_layer(args)
 end
 
 def prepare_sprites(args)
@@ -98,6 +99,24 @@ def prepare_blood_splat_sprites(args)
   }
 end
 
+def prepare_gore_layer(args)
+  screen = args.state.screen
+  get_gore_layer_render_target(args, clear: true)
+  {
+    x: 0, y: 0, w: screen[:x_resolution], h: screen[:y_resolution],
+    path: :gore_layer
+  }
+end
+
+def get_gore_layer_render_target(args, clear: false)
+  screen = args.state.screen
+  render_target = args.outputs[:gore_layer]
+  render_target.clear_before_render = clear
+  render_target.width = screen[:x_resolution]
+  render_target.height = screen[:y_resolution]
+  render_target
+end
+
 def process_input(args)
   keyboard_key_down = args.inputs.keyboard.key_down
   keyboard_key_held = args.inputs.keyboard.key_held
@@ -140,6 +159,8 @@ def update(args)
       entity[:x] += entity[:v_x]
       entity[:y] += entity[:v_y]
     end
+
+    dry_blood(args)
   end
 
   handle_debug(args) if args.state.debug_allowed
@@ -166,6 +187,20 @@ def moving_entity_collisions(entity, targets)
   }
 end
 
+def dry_blood(args)
+  gore_render_target = get_gore_layer_render_target(args)
+  args.state.blood_stains.sprites.each do |blood_stain|
+    blood_stain[:age] += 1
+    blood_stain[:r] = blood_stain[:age].remap(0, 3600, Colors::BLOOD[:r], Colors::DRIED_BLOOD[:r])
+    blood_stain[:g] = blood_stain[:age].remap(0, 3600, Colors::BLOOD[:g], Colors::DRIED_BLOOD[:g])
+    blood_stain[:b] = blood_stain[:age].remap(0, 3600, Colors::BLOOD[:b], Colors::DRIED_BLOOD[:b])
+
+    gore_render_target.sprites << blood_stain if blood_stain[:age] >= 3600
+  end
+
+  args.state.blood_stains.sprites.select! { |blood_stain| blood_stain[:age] < 3600 }
+end
+
 def render(args)
   screen = args.state.screen
   screen_render_target = Screen.build_render_target(args, screen)
@@ -174,6 +209,7 @@ def render(args)
     path: :pixel, **Colors::BACKGROUND
   }
 
+  screen_render_target.sprites << args.state.gore_layer
   screen_render_target.sprites << args.state.blood_stains
 
   args.state.animations.each do |animation|
