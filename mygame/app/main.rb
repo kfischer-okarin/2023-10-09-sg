@@ -42,6 +42,7 @@ end
 def prepare_sprites(args)
   args.state.sprites.triangle = prepare_triangle_sprite(args)
   args.state.sprites.circle = prepare_circle_sprite(args, :circle)
+  args.state.sprites.blood_splats = prepare_blood_splat_sprites(args)
 end
 
 def prepare_triangle_sprite(args)
@@ -72,6 +73,28 @@ def prepare_circle_sprite(args, name, radius: 5)
     ]
   end
   { w: diameter, h: diameter, path: name }
+end
+
+def prepare_blood_splat_sprites(args)
+  (0..5).map { |i|
+    render_target_name = :"blood_splat_#{i}"
+    render_target = args.outputs[render_target_name]
+    render_target.width = 22
+    render_target.height = 11
+
+    render_target.sprites << { x: 3, y: 3, w: 5, h: 5, path: :circle }
+    3.times do
+      render_target.sprites << { x: 1 + rand(5), y: 1 + rand(5), w: 4, h: 4, path: :circle }
+    end
+
+    5.times do
+      render_target.sprites << { x: 8 + rand(5), y: 1 + rand(5), w: 2, h: 1, path: :pixel }
+    end
+
+    {
+      w: 22, h: 11, path: render_target_name
+    }
+  }
 end
 
 def process_input(args)
@@ -149,6 +172,8 @@ def render(args)
     x: 0, y: 0, w: screen[:x_resolution], h: screen[:y_resolution],
     path: :pixel, **Colors::BACKGROUND
   }
+
+  screen_render_target.sprites << args.state.blood_stains
 
   args.state.animations.each do |animation|
     Animations.perform_tick animation
