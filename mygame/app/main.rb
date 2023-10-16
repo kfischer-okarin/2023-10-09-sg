@@ -4,6 +4,7 @@ require 'app/enemies/crescent_moon.rb'
 require 'app/player.rb'
 require 'lib/animations.rb'
 require 'lib/screen.rb'
+require 'lib/profiling.rb'
 
 def tick(args)
   setup(args) if args.state.tick_count.zero?
@@ -14,6 +15,8 @@ def tick(args)
 
   render(args)
 end
+
+# Profiling.activate
 
 def setup(args)
   args.state.debug_allowed = !$gtk.production?
