@@ -380,8 +380,13 @@ def positions_around(position, distance:, count: 8)
   }
 end
 
+STAGE_LEFT = 0
+STAGE_RIGHT = 3199
+STAGE_BOTTOM = 0
+STAGE_TOP = 1799
+
 def on_screen?(position)
-  position[:x].between?(0, 3199) && position[:y].between?(0, 1799)
+  position[:x].between?(STAGE_LEFT, STAGE_RIGHT) && position[:y].between?(STAGE_BOTTOM, STAGE_TOP)
 end
 
 def point_inside_rect?(point, rect)
