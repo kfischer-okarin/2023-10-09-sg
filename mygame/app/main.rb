@@ -162,6 +162,10 @@ def update(args)
       entity[:x] += entity[:v_x]
       entity[:y] += entity[:v_y]
     end
+    player_half_w = scaled_to_world(player[:w].idiv(2))
+    player_half_h = scaled_to_world(player[:h].idiv(2))
+    player[:x] = player[:x].clamp(STAGE_LEFT + player_half_w, STAGE_RIGHT - player_half_w)
+    player[:y] = player[:y].clamp(STAGE_BOTTOM + player_half_h, STAGE_TOP - player_half_h)
 
     dry_blood(args)
   end
