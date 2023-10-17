@@ -158,14 +158,19 @@ def update(args)
 
     Player.handle_hits(args, player)
 
-    (args.state.moving_entities + args.state.projectiles).each do |entity|
+    args.state.moving_entities.each do |entity|
       entity[:x] += entity[:v_x]
       entity[:y] += entity[:v_y]
+      entity_half_w = scaled_to_world(entity[:w].idiv(2))
+      entity_half_h = scaled_to_world(entity[:h].idiv(2))
+      entity[:x] = entity[:x].clamp(STAGE_LEFT + entity_half_w, STAGE_RIGHT - entity_half_w)
+      entity[:y] = entity[:y].clamp(STAGE_BOTTOM + entity_half_h, STAGE_TOP - entity_half_h)
     end
-    player_half_w = scaled_to_world(player[:w].idiv(2))
-    player_half_h = scaled_to_world(player[:h].idiv(2))
-    player[:x] = player[:x].clamp(STAGE_LEFT + player_half_w, STAGE_RIGHT - player_half_w)
-    player[:y] = player[:y].clamp(STAGE_BOTTOM + player_half_h, STAGE_TOP - player_half_h)
+
+    args.state.projectiles.each do |projectile|
+      projectile[:x] += projectile[:v_x]
+      projectile[:y] += projectile[:v_y]
+    end
 
     dry_blood(args)
   end
