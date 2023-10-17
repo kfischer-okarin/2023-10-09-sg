@@ -310,6 +310,10 @@ def scaled_to_screen(value)
   (value / WORLD_TO_SCREEN_SCALE).round
 end
 
+def scaled_to_world(value)
+  value * WORLD_TO_SCREEN_SCALE
+end
+
 def handle_debug(args)
   player_inputs = args.state.player_inputs
   args.state.force_debug = !args.state.force_debug if player_inputs[:toggle_force_debug]
@@ -331,8 +335,8 @@ def render_force_debug(args, screen_render_target)
   mouse_position = { x: args.inputs.mouse.x, y: args.inputs.mouse.y }
   screen_mouse_position = Screen.to_screen_position(args.state.screen, mouse_position)
   world_mouse_position = {
-    x: screen_mouse_position.x * WORLD_TO_SCREEN_SCALE,
-    y: screen_mouse_position.y * WORLD_TO_SCREEN_SCALE
+    x: scaled_to_world(screen_mouse_position.x),
+    y: scaled_to_world(screen_mouse_position.y)
   }
   player = args.state.player
 
