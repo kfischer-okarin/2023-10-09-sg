@@ -35,8 +35,9 @@ module Enemies
             **color
           }
         when :running
-          last_position_count = state[:last_positions].size
-          state[:last_positions].map_with_index do |position, index|
+          last_positions = state[:last_positions] || [red_arrow.slice(:x, :y, :face_angle)]
+          last_position_count = last_positions.size
+          last_positions.map_with_index do |position, index|
             color = red_arrow[:color].merge(a: index * 255 / last_position_count)
             {
               x: scaled_to_screen(position[:x]) - red_arrow[:w].idiv(2),
@@ -87,7 +88,7 @@ module Enemies
           state[:current_run_remaining_ticks] = (20 + rand(20))
         end
 
-        state[:last_positions] << { x: red_arrow[:x], y: red_arrow[:y], face_angle: red_arrow[:face_angle] }
+        state[:last_positions] << red_arrow.slice(:x, :y, :face_angle)
         state[:last_positions].shift if state[:last_positions].size > 10
       end
     end
