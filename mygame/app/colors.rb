@@ -40,6 +40,7 @@ module Colors
   PLAYER = DawnBringer32::LAVENDER_BLUE
   CRESCENT_MOON = DawnBringer32::ALMOST_BLACK
   CRESCENT_MOON_SHURIKEN = DawnBringer32::WHITE
+  RED_ARROW = DawnBringer32::LIGHT_RED
   BLOOD = DawnBringer32::RED
   DRIED_BLOOD = DawnBringer32::DARK_BROWN
   FLASH = DawnBringer32::WHITE

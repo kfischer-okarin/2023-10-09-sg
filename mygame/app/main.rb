@@ -1,6 +1,7 @@
 require 'app/colors.rb'
 require 'app/collision.rb'
 require 'app/enemies/crescent_moon.rb'
+require 'app/enemies/red_arrow.rb'
 require 'app/player.rb'
 require 'lib/animations.rb'
 require 'lib/screen.rb'
@@ -24,12 +25,15 @@ def setup(args)
   args.state.game_state = :playing
   args.state.player = Player.build(x: 1600, y: 900)
   args.state.crescent_moon = Enemies::CrescentMoon.build(x: 2000, y: 1000)
+  args.state.red_arrow = Enemies::RedArrow.build(x: 1000, y: 400)
   args.state.moving_entities = [
     args.state.player,
-    args.state.crescent_moon
+    args.state.crescent_moon,
+    args.state.red_arrow
   ]
   args.state.enemies = [
-    args.state.crescent_moon
+    args.state.crescent_moon,
+    args.state.red_arrow
   ]
   args.state.charge_particles = []
   args.state.projectiles = []
@@ -229,7 +233,9 @@ def render(args)
   end
   args.state.animations.reject! { |animation| Animations.finished? animation }
 
-  screen_render_target.sprites << Enemies::CrescentMoon.sprite(args.state.crescent_moon)
+  args.state.enemies.each do |enemy|
+    screen_render_target.sprites << enemy[:type].sprite(enemy)
+  end
 
   player = args.state.player
   screen_render_target.sprites << Player.sprite(player)
