@@ -108,19 +108,19 @@ end
 
 def prepare_gore_layer(args)
   screen = args.state.screen
-  get_gore_layer_render_target(args, clear: true)
   {
     x: 0, y: 0, w: screen[:x_resolution], h: screen[:y_resolution],
     path: :gore_layer
   }
 end
 
-def get_gore_layer_render_target(args, clear: false)
+def get_gore_layer_render_target(args)
   screen = args.state.screen
   render_target = args.outputs[:gore_layer]
-  render_target.clear_before_render = clear
+  render_target.transient!
   render_target.width = screen[:x_resolution]
   render_target.height = screen[:y_resolution]
+  render_target.clear_before_render = args.state.tick_count.zero?
   render_target
 end
 
