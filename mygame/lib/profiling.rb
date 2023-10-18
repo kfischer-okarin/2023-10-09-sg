@@ -7,7 +7,6 @@ module Profiling
         start_time = Time.now.to_f
         top_level_tick.call(args)
         times << (Time.now.to_f - start_time) * 1000
-        p times.last
         times.shift if times.size > window_size
 
         x = 10
