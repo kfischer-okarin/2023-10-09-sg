@@ -8,7 +8,7 @@ module Player
         state: { type: :movement },
         collision_radius: 50,
         hits: [],
-        last_hurt_tick: -1000,
+        last_hit_tick: -1000,
         hp: 60
       }
     end
@@ -52,34 +52,42 @@ module Player
     def handle_hits(args, player)
       return unless player[:hits].any?
 
-      if args.state.tick_count - player[:last_hurt_tick] > 60
-        player[:last_hurt_tick] = args.state.tick_count
+      time_since_last_hit = args.state.tick_count - player[:last_hit_tick]
+
+      if time_since_last_hit > 60
+        player[:last_hit_tick] = args.state.tick_count
         args.state.screen_flash.merge!(Colors::BLOOD)
         args.state.screen_flash[:a] = 255
         args.state.animations << Animations.lerp(args.state.screen_flash, to: { a: 0 }, duration: 0.5.seconds)
       end
 
-      blood_stains = args.state.blood_stains
-
-      player[:hits].each do |hit|
-        case hit[:type]
-        when :shuriken
-          player[:hp] -= 1
-          sprite = args.state.sprites.blood_splats.sample
-          offset_x = Math.cos(hit[:angle]) * (5 + rand(10)) - sprite[:w].idiv(2)
-          offset_y = Math.sin(hit[:angle]) * (5 + rand(10)) - sprite[:h].idiv(2)
+      if time_since_last_hit > 20
+        blood_stains = args.state.blood_stains
+        player[:hits].each do |hit|
+          blood_sprite = args.state.sprites.blood_splats.sample
+          offset_x = Math.cos(hit[:angle]) * (5 + rand(10)) - blood_sprite[:w].idiv(2)
+          offset_y = Math.sin(hit[:angle]) * (5 + rand(10)) - blood_sprite[:h].idiv(2)
           angle_rounded_to_90_degrees = (hit[:angle].to_degrees / 90).round * 90
-          blood_stains << sprite.merge(
+          blood_stains << blood_sprite.merge(
             x: scaled_to_screen(player[:x]) + offset_x,
             y: scaled_to_screen(player[:y]) + offset_y,
             age: 0,
             angle: angle_rounded_to_90_degrees,
             **Colors::BLOOD
           )
+
+          case hit[:type]
+          when :shuriken
+            player[:hp] -= 1
+          when :red_arrow
+            player[:hp] -= 3
+          end
         end
+
+        player[:hp] = 0 if player[:hp].negative?
+        args.state.game_state = :lost if player[:hp].zero?
       end
-      player[:hp] = 0 if player[:hp].negative?
-      args.state.game_state = :lost if player[:hp].zero?
+
       player[:hits].clear
     end
 

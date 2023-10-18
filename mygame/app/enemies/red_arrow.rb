@@ -6,7 +6,7 @@ module Enemies
           x: x, y: y, w: 11, h: 11,
           type: RedArrow,
           face_angle: 0, v_x: 0, v_y: 0,
-          state: { type: :standing },
+          state: { type: :run_around },
           collision_radius: 50,
           color: Colors::RED_ARROW
         }
@@ -21,20 +21,7 @@ module Enemies
       def sprite(red_arrow)
         state = red_arrow[:state]
         case state[:type]
-        when :standing
-          color = state[:type] == :dead ? Colors::BLOOD : red_arrow[:color]
-          {
-            x: scaled_to_screen(red_arrow[:x]) - red_arrow[:w].idiv(2),
-            y: scaled_to_screen(red_arrow[:y]) - red_arrow[:h].idiv(2),
-            w: red_arrow[:w],
-            h: red_arrow[:h],
-            path: 'sprites/arrow.png',
-            angle: red_arrow[:face_angle],
-            angle_anchor_x: 0.5,
-            angle_anchor_y: 0.5,
-            **color
-          }
-        when :running
+        when :run_around
           last_positions = state[:last_positions] || [red_arrow.slice(:x, :y, :face_angle)]
           last_position_count = last_positions.size
           last_positions.map_with_index do |position, index|
@@ -51,24 +38,26 @@ module Enemies
               **color
             }
           end
+        else
+          color = state[:type] == :dead ? Colors::BLOOD : red_arrow[:color]
+          {
+            x: scaled_to_screen(red_arrow[:x]) - red_arrow[:w].idiv(2),
+            y: scaled_to_screen(red_arrow[:y]) - red_arrow[:h].idiv(2),
+            w: red_arrow[:w],
+            h: red_arrow[:h],
+            path: 'sprites/arrow.png',
+            angle: red_arrow[:face_angle],
+            angle_anchor_x: 0.5,
+            angle_anchor_y: 0.5,
+            **color
+          }
         end
       end
 
       private
 
-      def handle_standing(args, red_arrow)
-        state = red_arrow[:state]
-        state[:ticks] ||= 0
-
-        state[:ticks] += 1
-
-        if state[:ticks] > 60
-          red_arrow[:state] = { type: :running }
-        end
-      end
-
-      def handle_running(args, red_arrow)
-        speed = 30
+      def handle_run_around(args, red_arrow)
+        speed = 40
         state = red_arrow[:state]
         state[:ticks] ||= 0
         state[:current_run_remaining_ticks] ||= (20 + rand(20))
@@ -90,6 +79,13 @@ module Enemies
 
         state[:last_positions] << red_arrow.slice(:x, :y, :face_angle)
         state[:last_positions].shift if state[:last_positions].size > 10
+
+        player = args.state.player
+        player_was_hit = Collision.sphere_capsule_collision?(
+          player[:x], player[:y], player[:collision_radius],
+          red_arrow[:x], red_arrow[:y], red_arrow[:x] + red_arrow[:v_x], red_arrow[:y] + red_arrow[:v_y], red_arrow[:collision_radius]
+        )
+        player[:hits] << { type: :red_arrow, angle: red_arrow[:face_angle].to_radians } if player_was_hit
       end
     end
   end
