@@ -79,13 +79,16 @@ module Enemies
         red_arrow[:v_x] = Math.cos(red_arrow[:face_angle].to_radians) * speed
         red_arrow[:v_y] = Math.sin(red_arrow[:face_angle].to_radians) * speed
 
-        state[:last_positions] << { x: red_arrow[:x], y: red_arrow[:y], face_angle: red_arrow[:face_angle] }
-        state[:last_positions].shift if state[:last_positions].size > 5
+        didnt_move = red_arrow[:x] == state[:last_positions].last&.dig(:x) &&
+                     red_arrow[:y] == state[:last_positions].last&.dig(:y)
 
-        if state[:current_run_remaining_ticks] <= 0
+        if state[:current_run_remaining_ticks] <= 0 || didnt_move
           red_arrow[:face_angle] = (red_arrow[:face_angle] + [90, -90].sample) % 360
           state[:current_run_remaining_ticks] = (20 + rand(20))
         end
+
+        state[:last_positions] << { x: red_arrow[:x], y: red_arrow[:y], face_angle: red_arrow[:face_angle] }
+        state[:last_positions].shift if state[:last_positions].size > 10
       end
     end
   end
