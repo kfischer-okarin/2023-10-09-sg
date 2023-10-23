@@ -19,3 +19,6 @@
 
 ## Credits
 - `notalot.ttf` by Chequered Ink (https://www.dafont.com/notalot60.font)
+- `shuriken.mp3` - 効果音ラボ - 戦闘(2) -  [手裏剣を投げる](https://soundeffect-lab.info/sound/battle/mp3/dart1.mp3)
+- `charge1.mp3` - Springing' Sound Stack - 戦闘 - [気を溜める３](https://www.springin.org/wp-content/uploads/2022/06/%E6%B0%97%E3%82%92%E6%BA%9C%E3%82%81%E3%82%8B3.mp3)
+- `charge2.mp3` - 効果音ラボ - 戦闘(1) - [ステータス上昇魔法２](https://soundeffect-lab.info/sound/battle/mp3/magic-statusup2.mp3)

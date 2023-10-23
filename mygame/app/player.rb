@@ -134,6 +134,15 @@ module Player
       player[:v_y] = 0
 
       args.state.charge_particles = []
+      args.audio[:charge] = {
+        input: 'audio/charge1.mp3',
+        gain: 0.2
+      }
+      args.audio[:charge2] = {
+        input: 'audio/charge2.mp3',
+        looping: true,
+        gain: 0.0
+      }
     end
 
     def handle_charging(args, player)
@@ -142,6 +151,7 @@ module Player
 
       if player_inputs[:charge]
         charging_state[:ticks] += 1
+        args.audio[:charge2][:gain] = charging_state[:ticks].remap(0, 60, 0.0, 0.2) if charging_state[:ticks] < 60
         charging_state[:power] = [charging_state[:ticks], 120].min
         charging_state[:ready] = charging_state[:power] >= 40
 
@@ -156,6 +166,8 @@ module Player
 
         charging_state[:predicted_distance] = predict_rush_distance(player) if charging_state[:ready]
       else
+        args.audio.delete(:charge)
+        args.audio.delete(:charge2)
         if charging_state[:ready]
           player[:state] = { type: :rushing, power: charging_state[:power] }
         else
