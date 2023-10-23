@@ -22,11 +22,19 @@
 - [X] Projectives
 
 
+** DOING Red Arrow
+- [X] Movement
+- [ ] More intentionally attacking the player
+
+
 ** TODO Stage boundaries
 - [ ] Screen shake when hitting wall
 - [ ] Dazed ? when hitting wall?
 
 
-** TODO Gore
+** DOING Gore
+- [X] Blood when being hit yourself
+- [ ] Blood on player when killing an enemy
+- [ ] Fancy death animation & blood trail
 
 ** TODO Better Game Over Screen
