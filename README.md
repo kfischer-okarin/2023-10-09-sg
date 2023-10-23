@@ -1,4 +1,9 @@
-# My Game
+# Bloody Shapes
+
+A [Small Game](https://abagames.github.io/joys-of-small-game-development-en/) made with
+[DragonRuby GTK](https://dragonruby.itch.io/dragonruby-gtk) between Oct 9th and Oct 23rd, 2023.
+
+[Itch.io Page](https://kfischer-okarin.itch.io/bloody-shapes)
 
 ## How to checkout the game
 1. Extract the DragonRuby version you want to use somewhere
