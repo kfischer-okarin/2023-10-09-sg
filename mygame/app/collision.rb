@@ -1,4 +1,5 @@
 module Collision
+  # https://arrowinmyknee.com/2021/03/15/some-math-about-capsule-collision/
   class << self
     def sphere_capsule_collision?(sphere_x, sphere_y, sphere_r, capsule_x1, capsule_y1, capsule_x2, capsule_y2, capsule_r)
       distance_squared = squared_distance_point_segment(sphere_x, sphere_y, capsule_x1, capsule_y1, capsule_x2, capsule_y2)
