@@ -20,13 +20,14 @@ module Player
     end
 
     def sprite(player)
+      color = player[:hp].positive? ? Colors::PLAYER : Colors::BLOOD
       {
         x: scaled_to_screen(player[:x]) - player[:w].idiv(2),
         y: scaled_to_screen(player[:y]) - player[:h].idiv(2),
         w: player[:w],
         h: player[:h],
         path: :pixel,
-        **Colors::PLAYER
+        **color
       }
     end
 
