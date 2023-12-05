@@ -276,24 +276,20 @@ def render(args)
 
   screen_render_target.sprites << args.state.screen_flash
 
-  game_state = args.state.game_state
-  if game_state == :won && player_state[:type] == :movement
-    screen_render_target.labels << {
-      x: 160, y: 90, text: 'You Win!', size_px: 39, font: 'fonts/notalot.ttf',
-      alignment_enum: 1, vertical_alignment_enum: 1, **Colors::TEXT
-    }
-  end
+  if game_over?(args) && player_state[:type] == :movement # execute rush to the end
+    game_state = args.state.game_state
 
-  if game_state == :lost && player_state[:type] == :movement
-    screen_render_target.labels << {
-      x: 160, y: 90, text: 'You Lose!', size_px: 39, font: 'fonts/notalot.ttf',
-      alignment_enum: 1, vertical_alignment_enum: 1, **Colors::TEXT
-    }
-  end
+    message = case game_state
+              when :won
+                'You Win!'
+              when :lost
+                'You are Dead!'
+              when :time_up
+                'Time Up!'
+              end
 
-  if game_state == :time_up && player_state[:type] == :movement
     screen_render_target.labels << {
-      x: 160, y: 90, text: 'Time Up!', size_px: 39, font: 'fonts/notalot.ttf',
+      x: 160, y: 90, text: message, size_px: 39, font: 'fonts/notalot.ttf',
       alignment_enum: 1, vertical_alignment_enum: 1, **Colors::TEXT
     }
   end
