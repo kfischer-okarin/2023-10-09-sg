@@ -13,6 +13,8 @@ module Enemies
       end
 
       def tick(args, crescent_moon)
+        return if game_over?(args)
+
         crescent_moon_state = crescent_moon[:state]
 
         send("handle_#{crescent_moon_state[:type]}", args, crescent_moon)

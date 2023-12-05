@@ -142,12 +142,11 @@ def process_input(args)
 end
 
 def update(args)
-  args.state.paused = !args.state.paused if args.state.player_inputs[:pause]
+  args.state.paused = !args.state.paused if args.state.player_inputs[:pause] && !game_over?(args)
 
   unless args.state.paused
     player = args.state.player
     Player.tick(args, player)
-    return if %i[won lost].include? args.state.game_state
 
     args.state.enemies.each do |enemy|
       next if enemy[:state][:type] == :dead
@@ -179,8 +178,10 @@ def update(args)
 
     dry_blood(args)
 
-    args.state.timer = [args.state.timer - 1, 0].max
-    args.state.game_state = :time_up if args.state.timer.zero?
+    unless game_over?(args)
+      args.state.timer = [args.state.timer - 1, 0].max
+      args.state.game_state = :time_up if args.state.timer.zero?
+    end
   end
 
   handle_debug(args) if args.state.debug_allowed
@@ -307,6 +308,10 @@ def render(args)
   args.outputs.sprites << Screen.sprite(screen)
 
   render_debug(args, screen_render_target) if args.state.debug_allowed
+end
+
+def game_over?(args)
+  args.state.game_state != :playing
 end
 
 def facing_triangle(entity, triangle_sprite, distance: 10)

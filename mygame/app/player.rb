@@ -52,6 +52,11 @@ module Player
     def handle_hits(args, player)
       return unless player[:hits].any?
 
+      if game_over?(args)
+        player[:hits].clear
+        return
+      end
+
       time_since_last_hit = args.state.tick_count - player[:last_hit_tick]
 
       if time_since_last_hit > 60
@@ -94,7 +99,11 @@ module Player
     private
 
     def handle_movement(args, player)
-      return if args.state.game_state == :won
+      if game_over?(args)
+        player[:v_x] = 0
+        player[:v_y] = 0
+        return
+      end
 
       player_inputs = args.state.player_inputs
 
