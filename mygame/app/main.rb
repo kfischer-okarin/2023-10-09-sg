@@ -180,7 +180,7 @@ def update(args)
 
     unless game_over?(args)
       args.state.timer = [args.state.timer - 1, 0].max
-      args.state.game_state = :time_up if args.state.timer.zero?
+      trigger_game_over(args, :time_up) if args.state.timer.zero?
     end
   end
 
@@ -304,6 +304,10 @@ def render(args)
   args.outputs.sprites << Screen.sprite(screen)
 
   render_debug(args, screen_render_target) if args.state.debug_allowed
+end
+
+def trigger_game_over(args, game_over_type)
+  args.state.game_state = game_over_type
 end
 
 def game_over?(args)

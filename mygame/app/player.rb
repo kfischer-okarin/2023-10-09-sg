@@ -90,7 +90,7 @@ module Player
         end
 
         player[:hp] = 0 if player[:hp].negative?
-        args.state.game_state = :lost if player[:hp].zero?
+        trigger_game_over(args, :lost) if player[:hp].zero?
       end
 
       player[:hits].clear
@@ -209,7 +209,7 @@ module Player
         enemy[:v_x] = 0
         enemy[:v_y] = 0
       end
-      args.state.game_state = :won if enemies.all? { |enemy| enemy[:state][:type] == :dead }
+      trigger_game_over(args, :won) if enemies.all? { |enemy| enemy[:state][:type] == :dead }
 
       player[:state] = { type: :movement } if rushing_state[:power].zero?
     end
