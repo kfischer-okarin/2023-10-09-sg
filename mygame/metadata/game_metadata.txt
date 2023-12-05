@@ -3,5 +3,5 @@ devid=kfischer-okarin
 devtitle=Kevin Fischer
 gameid=sg-bloody-shapes
 gametitle=Bloody Shapes
-version=1.0
+version=1.1
 icon=metadata/icon.png
