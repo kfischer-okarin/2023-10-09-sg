@@ -78,9 +78,9 @@ module Player
 
           case hit[:type]
           when :shuriken
-            player[:hp] -= 1
+            player[:hp] -= 10
           when :red_arrow
-            player[:hp] -= 3
+            player[:hp] -= 20
           end
         end
 
