@@ -22,6 +22,13 @@ end
 def setup(args)
   args.state.debug_allowed = !$gtk.production?
   args.state.screen = Screen::GBA_STYLE
+  args.state.blood_stains = []
+  prepare_sprites(args)
+  args.state.gore_layer = prepare_gore_layer(args)
+  reset_game(args)
+end
+
+def reset_game(args)
   args.state.game_state = :playing
   args.state.player = Player.build(x: 1600, y: 900)
   args.state.crescent_moon = Enemies::CrescentMoon.build(x: 2000, y: 1000)
@@ -37,7 +44,6 @@ def setup(args)
   ]
   args.state.charge_particles = []
   args.state.projectiles = []
-  args.state.blood_stains = []
   args.state.paused = false
   args.state.animations = []
   args.state.screen_flash = {
@@ -45,8 +51,6 @@ def setup(args)
     path: :pixel, a: 0
   }
   args.state.timer = 20 * 60
-  prepare_sprites(args)
-  args.state.gore_layer = prepare_gore_layer(args)
 end
 
 def prepare_sprites(args)
@@ -179,7 +183,7 @@ def update(args)
     dry_blood(args)
 
     if game_over?(args)
-      $gtk.reset_next_tick if (args.tick_count - args.state.game_over_tick > 60) && args.state.player_inputs[:charge]
+      reset_game(args) if (args.tick_count - args.state.game_over_tick > 60) && args.state.player_inputs[:charge]
     else
       args.state.timer = [args.state.timer - 1, 0].max
       trigger_game_over(args, :time_up) if args.state.timer.zero?
