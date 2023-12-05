@@ -44,6 +44,7 @@ def setup(args)
     x: 0, y: 0, w: args.state.screen[:x_resolution], h: args.state.screen[:y_resolution],
     path: :pixel, a: 0
   }
+  args.state.timer = 20 * 60
   prepare_sprites(args)
   args.state.gore_layer = prepare_gore_layer(args)
 end
@@ -177,6 +178,9 @@ def update(args)
     end
 
     dry_blood(args)
+
+    args.state.timer = [args.state.timer - 1, 0].max
+    args.state.game_state = :time_up if args.state.timer.zero?
   end
 
   handle_debug(args) if args.state.debug_allowed
@@ -263,6 +267,11 @@ def render(args)
   }
 
   screen_render_target.sprites << Player.hp_bar_sprite(player)
+  screen_render_target.labels << {
+    x: 160, y: 10, text: 'Time Left: %.2f' % (args.state.timer / 60.0),
+    size_px: 13, font: 'fonts/notalot.ttf',
+    alignment_enum: 1, vertical_alignment_enum: 1, **Colors::TEXT
+  }
 
   screen_render_target.sprites << args.state.screen_flash
 
@@ -277,6 +286,13 @@ def render(args)
   if game_state == :lost && player_state[:type] == :movement
     screen_render_target.labels << {
       x: 160, y: 90, text: 'You Lose!', size_px: 39, font: 'fonts/notalot.ttf',
+      alignment_enum: 1, vertical_alignment_enum: 1, **Colors::TEXT
+    }
+  end
+
+  if game_state == :time_up && player_state[:type] == :movement
+    screen_render_target.labels << {
+      x: 160, y: 90, text: 'Time Up!', size_px: 39, font: 'fonts/notalot.ttf',
       alignment_enum: 1, vertical_alignment_enum: 1, **Colors::TEXT
     }
   end
