@@ -178,7 +178,9 @@ def update(args)
 
     dry_blood(args)
 
-    unless game_over?(args)
+    if game_over?(args)
+      $gtk.reset_next_tick if (args.tick_count - args.state.game_over_tick > 60) && args.state.player_inputs[:charge]
+    else
       args.state.timer = [args.state.timer - 1, 0].max
       trigger_game_over(args, :time_up) if args.state.timer.zero?
     end
@@ -292,6 +294,15 @@ def render(args)
       x: 160, y: 90, text: message, size_px: 39, font: 'fonts/notalot.ttf',
       alignment_enum: 1, vertical_alignment_enum: 1, **Colors::TEXT
     }
+
+    ticks_since_game_over = args.tick_count - args.state.game_over_tick
+
+    if ticks_since_game_over > 60 && ticks_since_game_over.idiv(30).even?
+      screen_render_target.labels << {
+        x: 160, y: 60, text: 'Press Space to Restart', size_px: 13, font: 'fonts/notalot.ttf',
+        alignment_enum: 1, vertical_alignment_enum: 1, **Colors::TEXT
+      }
+    end
   end
 
   if args.state.paused
@@ -308,6 +319,7 @@ end
 
 def trigger_game_over(args, game_over_type)
   args.state.game_state = game_over_type
+  args.state.game_over_tick = args.tick_count
 end
 
 def game_over?(args)
