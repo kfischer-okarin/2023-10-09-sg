@@ -25,6 +25,11 @@ def setup(args)
   args.state.blood_stains = []
   prepare_sprites(args)
   args.state.gore_layer = prepare_gore_layer(args)
+  args.audio[:bgm] = {
+    input: 'audio/prelude_and_action.mp3',
+    looping: true,
+    gain: 0.3
+  }
   reset_game(args)
 end
 
